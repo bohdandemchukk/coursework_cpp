@@ -35,8 +35,8 @@ private slots:
     void on_actionFlipVertically_triggered();
 
     void onBrightnessChanged(int value);
+    void onSaturationChanged(int value);
 
-    friend QImage img();
 };
 
 #endif // MAINWINDOW_H

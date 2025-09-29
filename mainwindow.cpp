@@ -38,6 +38,7 @@ MainWindow::MainWindow(QWidget *parent)
 
 
     connect(ui->brightnessSlider, &QSlider::valueChanged, this, onBrightnessChanged);
+    connect(ui->saturationSlider, &QSlider::valueChanged, this, onSaturationChanged);
 }
 
 
@@ -107,6 +108,28 @@ void MainWindow::onBrightnessChanged(int value) {
             int g = qBound(0, color.green() + value ,255);
             int b = qBound(0, color.blue() + value ,255);
             row[x] = qRgb(r, g, b);
+        }
+    }
+
+    ui->graphicsView->setPixmap(QPixmap::fromImage(newImage));
+}
+
+void MainWindow::onSaturationChanged(int value) {
+    if (ui->graphicsView->getPixmap().isNull()) return;
+
+    double factor = static_cast<double>(value) / 100.0 + 1.0;
+    QImage newImage = originalImage;
+
+    for (std::size_t y = 0; y < newImage.height(); ++y) {
+        QRgb *row = reinterpret_cast<QRgb*>(newImage.scanLine(static_cast<int>(y)));
+        for (std::size_t x = 0; x < newImage.width(); ++x) {
+            QColor color = QColor::fromRgb(row[static_cast<int>(x)]);
+            int h, s, l;
+            color.getHsl(&h, &s, &l);
+            s = qBound(0, static_cast<int>(s*factor) , 255);
+            color.setHsl(h, s, l);
+
+            row[x] = color.rgb();
         }
     }
 
