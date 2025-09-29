@@ -5,10 +5,7 @@
 MyGraphicsView::MyGraphicsView(QWidget *parent)
     : QGraphicsView(parent)
     , rubberBand {new QRubberBand(QRubberBand::Rectangle, this)}
-{
-    setResizeAnchor(QGraphicsView::AnchorUnderMouse);
-
-}
+{}
 
 void MyGraphicsView::setPixmap(const QPixmap &pixmap) {
     m_pixmap = pixmap;

@@ -4,7 +4,7 @@
 #include <QGraphicsScene>
 #include <QWheelEvent>
 #include "mygraphicsview.h"
-
+#include <QImage>
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -23,6 +23,7 @@ public:
 private:
     Ui::MainWindow *ui;
     QGraphicsScene *scene;
+    QImage originalImage;
 
 
 private slots:
@@ -33,7 +34,9 @@ private slots:
     void on_actionFlipHorizontally_triggered();
     void on_actionFlipVertically_triggered();
 
+    void onBrightnessChanged(int value);
 
+    friend QImage img();
 };
 
 #endif // MAINWINDOW_H
