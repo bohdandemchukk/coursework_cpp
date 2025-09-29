@@ -10,6 +10,8 @@
 
 
 
+
+
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
@@ -37,8 +39,8 @@ MainWindow::MainWindow(QWidget *parent)
     });
 
 
-    connect(ui->brightnessSlider, &QSlider::valueChanged, this, onBrightnessChanged);
-    connect(ui->saturationSlider, &QSlider::valueChanged, this, onSaturationChanged);
+    connect(ui->brightnessSlider, &QSlider::valueChanged, this, updateImage);
+    connect(ui->saturationSlider, &QSlider::valueChanged, this, updateImage);
 }
 
 
@@ -57,6 +59,7 @@ void MainWindow::on_actionOpen_triggered() {
     if (!fileName.isEmpty()) {
         scene->clear();
         ui->graphicsView->setPixmap(fileName);
+
         originalImage = ui->graphicsView->getPixmap().toImage();
     }
 }
@@ -67,63 +70,62 @@ void MainWindow::on_actionCrop_triggered() {
 
 
 void MainWindow::on_actionRotateLeft_triggered() {
-    QTransform t{};
-    t.rotate(-90);
-    ui->graphicsView->setPixmap(ui->graphicsView->getPixmap().transformed(t));
-
+    imageState.rotateAngle -= 90;
+    updateImage();
 }
 
 void MainWindow::on_actionRotateRight_triggered() {
-    QTransform t{};
-    t.rotate(90);
-    ui->graphicsView->setPixmap(ui->graphicsView->getPixmap().transformed(t));
+    imageState.rotateAngle += 90;
+    updateImage();
 }
 
 void MainWindow::on_actionFlipHorizontally_triggered() {
-    QTransform t{};
-    t.scale(-1, 1);
-    ui->graphicsView->setPixmap(ui->graphicsView->getPixmap().transformed(t));
+    imageState.flipH = !imageState.flipH;
+    updateImage();
 }
 
 void MainWindow::on_actionFlipVertically_triggered() {
-    QTransform t{};
-    t.scale(1, -1);
-    ui->graphicsView->setPixmap(ui->graphicsView->getPixmap().transformed(t));
+    imageState.flipV = !imageState.flipV;
+    updateImage();
 }
 
 
 
 
-void MainWindow::onBrightnessChanged(int value) {
-
+void MainWindow::updateImage() {
     if (ui->graphicsView->getPixmap().isNull()) return;
 
     QImage newImage = originalImage;
 
-    for (std::size_t y = 0; y < newImage.height(); ++y) {
-        QRgb *row = reinterpret_cast<QRgb*>(newImage.scanLine(static_cast<int>(y)));
-        for (std::size_t x = 0; x < newImage.width(); ++x) {
-            QColor color = QColor::fromRgb(row[static_cast<int>(x)]);
-            int r = qBound(0, color.red() + value, 255);
-            int g = qBound(0, color.green() + value ,255);
-            int b = qBound(0, color.blue() + value ,255);
-            row[x] = qRgb(r, g, b);
-        }
+    if (imageState.rotateAngle) {
+        QTransform t;
+        t.rotate(imageState.rotateAngle);
+        newImage = newImage.transformed(t);
     }
 
-    ui->graphicsView->setPixmap(QPixmap::fromImage(newImage));
-}
+    if (imageState.flipH) {
+        newImage.flip(Qt::Horizontal);
+    }
 
-void MainWindow::onSaturationChanged(int value) {
-    if (ui->graphicsView->getPixmap().isNull()) return;
+    if (imageState.flipV) {
+        newImage.flip(Qt::Vertical);
+    }
 
-    double factor = static_cast<double>(value) / 100.0 + 1.0;
-    QImage newImage = originalImage;
+    imageState.brightness = ui->brightnessSlider->value();
+    imageState.saturation = ui->saturationSlider->value();
+
+    double factor = static_cast<double>(imageState.saturation) / 100.0 + 1.0;
 
     for (std::size_t y = 0; y < newImage.height(); ++y) {
         QRgb *row = reinterpret_cast<QRgb*>(newImage.scanLine(static_cast<int>(y)));
         for (std::size_t x = 0; x < newImage.width(); ++x) {
             QColor color = QColor::fromRgb(row[static_cast<int>(x)]);
+
+            int r = qBound(0, color.red() + imageState.brightness, 255);
+            int g = qBound(0, color.green() + imageState.brightness ,255);
+            int b = qBound(0, color.blue() + imageState.brightness ,255);
+            color.setRgb(r, g, b);
+
             int h, s, l;
             color.getHsl(&h, &s, &l);
             s = qBound(0, static_cast<int>(s*factor) , 255);
@@ -135,3 +137,4 @@ void MainWindow::onSaturationChanged(int value) {
 
     ui->graphicsView->setPixmap(QPixmap::fromImage(newImage));
 }
+

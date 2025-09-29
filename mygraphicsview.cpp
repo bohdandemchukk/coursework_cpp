@@ -1,11 +1,16 @@
 #include "mygraphicsview.h"
+#include "mainwindow.h"
 #include <QRectF>
 
+
+
+QImage MainWindow::originalImage;
 
 MyGraphicsView::MyGraphicsView(QWidget *parent)
     : QGraphicsView(parent)
     , rubberBand {new QRubberBand(QRubberBand::Rectangle, this)}
-{}
+{
+}
 
 void MyGraphicsView::setPixmap(const QPixmap &pixmap) {
     m_pixmap = pixmap;
@@ -73,6 +78,7 @@ void MyGraphicsView::mouseReleaseEvent(QMouseEvent *event) {
         }
 
         setCropMode(false);
+        MainWindow::originalImage = cropped.toImage();
 
     }
 

@@ -7,6 +7,10 @@
 #include <QImage>
 
 QT_BEGIN_NAMESPACE
+
+
+
+
 namespace Ui {
 class MainWindow;
 }
@@ -20,10 +24,35 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
+
+    QPixmap m_originalImage{};
+
+    QPixmap getOriginalImage() {
+        return m_originalImage;
+    }
+
+    void setOriginalImage(QPixmap img) {
+        m_originalImage = img;
+    }
+
+    static QImage originalImage;
+
 private:
     Ui::MainWindow *ui;
     QGraphicsScene *scene;
-    QImage originalImage;
+
+    struct ImageState {
+        int brightness  { 0 };
+        int saturation  { 0 };
+        int rotateAngle { 0 };
+        bool flipH      { false };
+        bool flipV      { false };
+    };
+
+    ImageState imageState {};
+
+
+
 
 
 private slots:
@@ -34,8 +63,7 @@ private slots:
     void on_actionFlipHorizontally_triggered();
     void on_actionFlipVertically_triggered();
 
-    void onBrightnessChanged(int value);
-    void onSaturationChanged(int value);
+    void updateImage();
 
 };
 
