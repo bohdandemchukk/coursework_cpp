@@ -44,15 +44,16 @@ private:
     struct ImageState {
         int brightness  { 0 };
         int saturation  { 0 };
+        int contrast    { 0 };
         int rotateAngle { 0 };
+        int blur        { 0 };
+        int sharpness   { 0 };
         bool flipH      { false };
         bool flipV      { false };
+        bool blackWhiteFilter {false};
     };
 
     ImageState imageState {};
-
-
-
 
 
 private slots:
