@@ -40,6 +40,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->saturationSlider, &QSlider::valueChanged, this, updateImage);
     connect(ui->contrastSlider, &QSlider::valueChanged, this, updateImage);
     connect(ui->blurSlider, &QSlider::valueChanged, this, updateImage);
+    connect(ui->sharpSlider, &QSlider::valueChanged, this, updateImage);
 
     ui->bwButton->setCheckable(true);
     connect(ui->bwButton, &QPushButton::toggled, this, [this](bool checked) {
@@ -120,9 +121,130 @@ void MainWindow::updateImage() {
     imageState.saturation = ui->saturationSlider->value();
     imageState.contrast   = ui->contrastSlider->value();
     imageState.blur       = ui->blurSlider->value();
+    imageState.sharpness  = ui->sharpSlider->value();
 
     double saturationFactor = static_cast<double>(imageState.saturation) / 100.0 + 1.0;
     double contrastFactor = (259.0 * (imageState.contrast + 255.0)) / (255.0 * (259.0 - imageState.contrast));
+
+
+    if (imageState.sharpness > 0) {
+
+        QImage savedOriginalImage {newImage};
+        int sharpnessFactor {imageState.sharpness / 50};
+        double blurFactor = 1.0;
+
+
+        int radius = std::ceil(3 * blurFactor);
+        int kernelSize = 2 * radius + 1;
+        std::vector<double> kernel(kernelSize);
+        double sum{};
+
+        for (int i {-radius}; i <= radius; i++) {
+            double value = std::exp(-(i*i)/(2*blurFactor*blurFactor));
+            kernel[i+radius] = value;
+            sum += value;
+        }
+
+        for (double& x : kernel) {
+            x /= sum;
+        }
+
+        QImage temp = newImage;
+        int width = temp.width();
+        int height = temp.height();
+
+        for (int y {0}; y < height; y++) {
+            QRgb* src {reinterpret_cast<QRgb*>(temp.scanLine(y))};
+            QRgb* dst {reinterpret_cast<QRgb*>(newImage.scanLine(y))};
+
+            for (int x{0}; x < width; x++) {
+
+                double rSum {};
+                double gSum {};
+                double bSum {};
+
+                for (int i {-radius}; i <= radius; i++) {
+                    int px = std::clamp(x+i, 0, width - 1);
+
+                    rSum += qRed(src[px]) * kernel[i+radius];
+                    gSum += qGreen(src[px]) * kernel[i+radius];
+                    bSum += qBlue(src[px]) * kernel[i+radius];
+
+                }
+
+                dst[x] = qRgb(
+                    static_cast<int>(std::clamp(rSum, 0.0, 255.0)),
+                    static_cast<int>(std::clamp(gSum, 0.0, 255.0)),
+                    static_cast<int>(std::clamp(bSum, 0.0, 255.0))
+                    );
+            }
+        }
+
+        temp = newImage;
+
+        std::vector<int> rCol(height);
+        std::vector<int> gCol(height);
+        std::vector<int> bCol(height);
+
+        for (int x {0}; x < width; x++) {
+
+
+            for (int y{0}; y < height; y++) {
+                QRgb px {reinterpret_cast<QRgb*>(temp.scanLine(y))[x]};
+                rCol[y] = qRed(px);
+                gCol[y] = qGreen(px);
+                bCol[y] = qBlue(px);
+
+                double rSum{};
+                double gSum{};
+                double bSum{};
+
+
+                for (int j {-radius}; j <= radius; j++) {
+                    int py = std::clamp(y+j, 0, height - 1);
+
+
+                    rSum += rCol[py] * kernel[j+radius];
+                    gSum += gCol[py] * kernel[j+radius];
+                    bSum += bCol[py] * kernel[j+radius];
+                }
+
+                reinterpret_cast<QRgb*>(newImage.scanLine(y))[x] = qRgb(
+                    static_cast<int>(std::clamp(rSum, 0.0, 255.0)),
+                    static_cast<int>(std::clamp(gSum, 0.0, 255.0)),
+                    static_cast<int>(std::clamp(bSum, 0.0, 255.0))
+                    );
+            }
+
+
+        }
+
+        for (int y {0}; y < height; y++) {
+            QRgb* src {reinterpret_cast<QRgb*>(savedOriginalImage.scanLine(y))};
+            QRgb* dst {reinterpret_cast<QRgb*>(newImage.scanLine(y))};
+
+            for (int x{0}; x < width; x++) {
+
+                QColor originalColor {QColor::fromRgb(src[x])};
+                QColor blurredColor {QColor::fromRgb(dst[x])};
+
+                int r = std::clamp((1+sharpnessFactor) * originalColor.red() - sharpnessFactor * blurredColor.red(), 0, 255);
+                int g = std::clamp((1+sharpnessFactor) * originalColor.green() - sharpnessFactor * blurredColor.green(), 0, 255);
+                int b = std::clamp((1+sharpnessFactor) * originalColor.blue() - sharpnessFactor * blurredColor.blue(), 0, 255);
+
+
+                originalColor.setRgb(r, g, b);
+
+                dst[x] = originalColor.rgb();
+            }
+        }
+
+
+    }
+
+
+
+
 
     if (imageState.blur > 0)
     {
