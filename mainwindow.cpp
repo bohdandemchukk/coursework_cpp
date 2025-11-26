@@ -130,7 +130,7 @@ void MainWindow::updateImage() {
     if (imageState.sharpness > 0) {
 
         QImage savedOriginalImage {newImage};
-        int sharpnessFactor {imageState.sharpness / 50};
+        int sharpnessFactor {imageState.sharpness};
         double blurFactor = 1.0;
 
 
