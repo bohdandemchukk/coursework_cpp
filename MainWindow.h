@@ -3,8 +3,9 @@
 #include <QMainWindow>
 #include <QGraphicsScene>
 #include <QWheelEvent>
-#include "mygraphicsview.h"
+#include "MyGraphicsView.h"
 #include <QImage>
+#include "filterpipeline.h"
 
 QT_BEGIN_NAMESPACE
 
@@ -24,24 +25,14 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
-
-    QPixmap m_originalImage{};
-
-    QPixmap getOriginalImage() {
-        return m_originalImage;
-    }
-
-    void setOriginalImage(QPixmap img) {
-        m_originalImage = img;
-    }
-
     static QImage originalImage;
+
 
 private:
     Ui::MainWindow *ui;
     QGraphicsScene *scene;
 
-    struct ImageState {
+    struct FilterState {
         int brightness  { 0 };
         int saturation  { 0 };
         int contrast    { 0 };
@@ -50,10 +41,12 @@ private:
         int sharpness   { 0 };
         bool flipH      { false };
         bool flipV      { false };
-        bool blackWhiteFilter {false};
+        bool BWFilter {false};
     };
 
-    ImageState imageState {};
+    FilterState filterState{};
+    FilterPipeline pipeline{};
+
 
 
 private slots:
@@ -63,8 +56,8 @@ private slots:
     void on_actionRotateRight_triggered();
     void on_actionFlipHorizontally_triggered();
     void on_actionFlipVertically_triggered();
-
     void updateImage();
+    void rebuildPipeline();
 
 };
 

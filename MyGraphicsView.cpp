@@ -1,5 +1,5 @@
-#include "mygraphicsview.h"
-#include "mainwindow.h"
+#include "MyGraphicsView.h"
+#include "MainWindow.h"
 #include <QRectF>
 
 
