@@ -22,6 +22,7 @@
 #include "temperaturefilter.h"
 #include "exposurefilter.h"
 #include "gammafilter.h"
+#include "tintfilter.h"
 
 
 MainWindow::MainWindow(QWidget *parent)
@@ -85,6 +86,11 @@ MainWindow::MainWindow(QWidget *parent)
 
     connect(ui->gammaSlider, QSlider::valueChanged, this, [this](int value) {
         filterState.gamma = value;
+        rebuildPipeline();
+    });
+
+    connect(ui->tintSlider, QSlider::valueChanged, this, [this](int value) {
+        filterState.tint = value;
         rebuildPipeline();
     });
 }
@@ -168,7 +174,7 @@ void MainWindow::rebuildPipeline() {
     pipeline.addFilter(std::make_unique<GammaFilter>(filterState.gamma));
 
     pipeline.addFilter(std::make_unique<BWFilter>(filterState.BWFilter));
-
+    pipeline.addFilter(std::make_unique<TintFilter>(filterState.tint));
 
     updateImage();
 }

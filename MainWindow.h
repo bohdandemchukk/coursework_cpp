@@ -42,6 +42,7 @@ private:
         int temperature { 0 };
         int exposure    { 0 };
         int gamma       { 0 };
+        int tint        { 0 };
         bool flipH      { false };
         bool flipV      { false };
         bool BWFilter   { false };

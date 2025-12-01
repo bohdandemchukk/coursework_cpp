@@ -41,6 +41,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         temperaturefilter.h temperaturefilter.cpp
         exposurefilter.h exposurefilter.cpp
         gammafilter.h gammafilter.cpp
+        tintfilter.h tintfilter.cpp
     )
 # Define target properties for Android with Qt 6 as:
 #    set_property(TARGET ImageEditor APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
