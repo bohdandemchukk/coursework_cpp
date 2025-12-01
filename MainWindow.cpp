@@ -20,7 +20,7 @@
 #include "filterpipeline.h"
 #include "saturationfilter.h"
 #include "temperaturefilter.h"
-
+#include "exposurefilter.h"
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -73,6 +73,11 @@ MainWindow::MainWindow(QWidget *parent)
 
     connect(ui->temperatureSlider, QSlider::valueChanged, this, [this](int value) {
         filterState.temperature = value;
+        rebuildPipeline();
+    });
+
+    connect(ui->exposureSlider, QSlider::valueChanged, this, [this](int value) {
+        filterState.exposure = value;
         rebuildPipeline();
     });
 }
@@ -152,6 +157,8 @@ void MainWindow::rebuildPipeline() {
     pipeline.addFilter(std::make_unique<ContrastFilter>(filterState.contrast));
     pipeline.addFilter(std::make_unique<SaturationFilter>(filterState.saturation));
     pipeline.addFilter(std::make_unique<TemperatureFilter>(filterState.temperature));
+    pipeline.addFilter(std::make_unique<ExposureFilter>(filterState.exposure));
+
 
     pipeline.addFilter(std::make_unique<BWFilter>(filterState.BWFilter));
 
