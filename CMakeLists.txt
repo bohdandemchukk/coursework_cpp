@@ -37,6 +37,8 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         blurfilter.h blurfilter.cpp
         sharpenfilter.h sharpenfilter.cpp
         filterpipeline.h filterpipeline.cpp
+        undoredo.h undoredo.cpp
+        temperaturefilter.h temperaturefilter.cpp
     )
 # Define target properties for Android with Qt 6 as:
 #    set_property(TARGET ImageEditor APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR

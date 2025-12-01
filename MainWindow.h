@@ -39,9 +39,10 @@ private:
         int rotateAngle { 0 };
         int blur        { 0 };
         int sharpness   { 0 };
+        int temperature { 0 };
         bool flipH      { false };
         bool flipV      { false };
-        bool BWFilter {false};
+        bool BWFilter   { false };
     };
 
     FilterState filterState{};

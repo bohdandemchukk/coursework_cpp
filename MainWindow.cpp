@@ -19,6 +19,7 @@
 #include "BWFilter.h"
 #include "filterpipeline.h"
 #include "saturationfilter.h"
+#include "temperaturefilter.h"
 
 
 MainWindow::MainWindow(QWidget *parent)
@@ -67,6 +68,11 @@ MainWindow::MainWindow(QWidget *parent)
     ui->bwButton->setCheckable(true);
     connect(ui->bwButton, &QPushButton::toggled, this, [this](bool checked) {
         filterState.BWFilter = checked;
+        rebuildPipeline();
+    });
+
+    connect(ui->temperatureSlider, QSlider::valueChanged, this, [this](int value) {
+        filterState.temperature = value;
         rebuildPipeline();
     });
 }
@@ -145,6 +151,7 @@ void MainWindow::rebuildPipeline() {
     pipeline.addFilter(std::make_unique<BrightnessFilter>(filterState.brightness));
     pipeline.addFilter(std::make_unique<ContrastFilter>(filterState.contrast));
     pipeline.addFilter(std::make_unique<SaturationFilter>(filterState.saturation));
+    pipeline.addFilter(std::make_unique<TemperatureFilter>(filterState.temperature));
 
     pipeline.addFilter(std::make_unique<BWFilter>(filterState.BWFilter));
 
