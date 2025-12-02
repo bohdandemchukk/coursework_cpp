@@ -29,7 +29,7 @@ QImage SaturationFilter::apply(const QImage& input) const {
         for (int x {0}; x < width; ++x) {
             QColor color {QColor::fromRgb(row[x])};
 
-            int h, s, l;
+            int h{}, s{}, l{};
             color.getHsl(&h, &s, &l);
             s = std::clamp(static_cast<int>(s * factor), 0, 255);
             color.setHsl(h, s, l);

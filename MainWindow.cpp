@@ -23,7 +23,7 @@
 #include "exposurefilter.h"
 #include "gammafilter.h"
 #include "tintfilter.h"
-
+#include "vibrancefilter.h"
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -91,6 +91,11 @@ MainWindow::MainWindow(QWidget *parent)
 
     connect(ui->tintSlider, QSlider::valueChanged, this, [this](int value) {
         filterState.tint = value;
+        rebuildPipeline();
+    });
+
+    connect(ui->vibranceSlider, QSlider::valueChanged, this, [this](int value) {
+        filterState.vibrance = value;
         rebuildPipeline();
     });
 }
@@ -175,6 +180,7 @@ void MainWindow::rebuildPipeline() {
 
     pipeline.addFilter(std::make_unique<BWFilter>(filterState.BWFilter));
     pipeline.addFilter(std::make_unique<TintFilter>(filterState.tint));
+    pipeline.addFilter(std::make_unique<VibranceFilter>(filterState.vibrance));
 
     updateImage();
 }

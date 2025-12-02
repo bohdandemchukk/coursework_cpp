@@ -1,9 +1,5 @@
 #include "tintfilter.h"
 
-#include "temperaturefilter.h"
-
-
-
 TintFilter::TintFilter(int tint)
     : m_tint{tint} {}
 

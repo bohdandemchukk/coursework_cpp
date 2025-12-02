@@ -43,6 +43,7 @@ private:
         int exposure    { 0 };
         int gamma       { 0 };
         int tint        { 0 };
+        int vibrance    { 0 };
         bool flipH      { false };
         bool flipV      { false };
         bool BWFilter   { false };
