@@ -24,35 +24,28 @@ QImage VibranceFilter::apply(const QImage& input) const {
             double g = green / 255.0;
             double b = blue / 255.0;
 
-            // КРИТИЧНО: перевіряємо в RGB просторі спочатку!
-            // Якщо колір майже сірий (різниця між каналами мала)
             int maxChannel = std::max({red, green, blue});
             int minChannel = std::min({red, green, blue});
             int diff = maxChannel - minChannel;
 
-            // Пропускаємо майже нейтральні кольори (біле/сіре/чорне світло)
-            if (diff < 20) {  // Різниця менше 20 = майже сірий
+            if (diff < 20) {
                 continue;
             }
 
             double h{}, s{}, v{};
             RgbHsvUtil::rgb2hsv(r, g, b, h, s, v);
 
-            // Додаткова перевірка після конвертації
             if (s < 0.08) {
                 continue;
             }
 
-            // Пропускаємо дуже світлі пікселі з низькою насиченістю
             if (v > 0.88 && s < 0.2) {
                 continue;
             }
 
-            // Формула vibrance
             double saturationWeight = 1.0 - s;
             double boost = vibrance * saturationWeight * 0.6;
 
-            // Захист шкіряних тонів
             if (h >= 5 && h <= 45) {
                 boost *= 0.4;
             }
