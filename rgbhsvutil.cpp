@@ -1,10 +1,6 @@
 #include "rgbhsvutil.h"
 
-
-
-
 void RgbHsvUtil::rgb2hsv(double r, double g, double b, double &h, double &s, double &v) {
-
     double maxv = std::max({r, g, b});
     double minv = std::min({r, g, b});
     double d = maxv - minv;
@@ -20,18 +16,19 @@ void RgbHsvUtil::rgb2hsv(double r, double g, double b, double &h, double &s, dou
     if (d == 0) {
         h = 0;
     } else if (maxv == r) {
-        h = 60 * fmod(((g - b) / d), 6.0);
+        h = 60 * ((g - b) / d);  // Прибрав fmod - він тут зайвий
+        if (h < 0) h += 360;
     } else if (maxv == g) {
         h = 60 * (((b - r) / d) + 2.0);
     } else {
         h = 60 * (((r - g) / d) + 4.0);
     }
-
-    if (h < 0) h += 360;
-
 }
 
 QRgb RgbHsvUtil::hsv2rgb(double h, double s, double v) {
+    // Нормалізуємо h до діапазону [0, 360)
+    while (h < 0) h += 360;
+    while (h >= 360) h -= 360;
 
     double c = v * s;
     double x = c * (1 - fabs(fmod(h / 60.0, 2.0) - 1));
@@ -47,9 +44,8 @@ QRgb RgbHsvUtil::hsv2rgb(double h, double s, double v) {
     else              { r=c; g=0; b=x; }
 
     return qRgb(
-        int(std::clamp((r+m) * 255, 0.0, 255.0)),
-        int(std::clamp((g+m) * 255, 0.0, 255.0)),
-        int(std::clamp((b+m) * 255, 0.0, 255.0))
+        int(std::round(std::clamp((r+m) * 255, 0.0, 255.0))),
+        int(std::round(std::clamp((g+m) * 255, 0.0, 255.0))),
+        int(std::round(std::clamp((b+m) * 255, 0.0, 255.0)))
         );
-
 }
