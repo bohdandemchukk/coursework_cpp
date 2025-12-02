@@ -16,7 +16,7 @@ void RgbHsvUtil::rgb2hsv(double r, double g, double b, double &h, double &s, dou
     if (d == 0) {
         h = 0;
     } else if (maxv == r) {
-        h = 60 * ((g - b) / d);  // Прибрав fmod - він тут зайвий
+        h = 60 * ((g - b) / d);
         if (h < 0) h += 360;
     } else if (maxv == g) {
         h = 60 * (((b - r) / d) + 2.0);
@@ -26,7 +26,7 @@ void RgbHsvUtil::rgb2hsv(double r, double g, double b, double &h, double &s, dou
 }
 
 QRgb RgbHsvUtil::hsv2rgb(double h, double s, double v) {
-    // Нормалізуємо h до діапазону [0, 360)
+
     while (h < 0) h += 360;
     while (h >= 360) h -= 360;
 

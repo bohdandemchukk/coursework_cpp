@@ -1,4 +1,5 @@
 #include "saturationfilter.h"
+#include "rgbhsvutil.h"
 
 SaturationFilter::SaturationFilter(int saturation)
     : m_saturation{saturation} {}
@@ -19,22 +20,27 @@ QImage SaturationFilter::apply(const QImage& input) const {
     if (!isActive()) return input;
 
     double factor = static_cast<double>(getSaturation()) / 100.0 + 1.0;
-    QImage result {input.copy()};
-    int height {result.height()};
-    int width {result.width()};
+    QImage result = input.copy();
 
-    for (int y {0}; y < height; ++y) {
-        QRgb *row {reinterpret_cast<QRgb*>(result.scanLine(y))};
+    int width = result.width();
+    int height = result.height();
 
-        for (int x {0}; x < width; ++x) {
-            QColor color {QColor::fromRgb(row[x])};
+    for (int y = 0; y < height; ++y) {
+        QRgb* row = reinterpret_cast<QRgb*>(result.scanLine(y));
 
-            int h{}, s{}, l{};
-            color.getHsl(&h, &s, &l);
-            s = std::clamp(static_cast<int>(s * factor), 0, 255);
-            color.setHsl(h, s, l);
+        for (int x = 0; x < width; ++x) {
+            QRgb pix = row[x];
 
-            row[x] = color.rgb();
+            double r = qRed(pix)   / 255.0;
+            double g = qGreen(pix) / 255.0;
+            double b = qBlue(pix)  / 255.0;
+
+            double h, s, v;
+            RgbHsvUtil::rgb2hsv(r, g, b, h, s, v);
+
+            s = std::clamp(s * factor, 0.0, 1.0);
+
+            row[x] = RgbHsvUtil::hsv2rgb(h, s, v);
         }
     }
 

@@ -14,21 +14,19 @@ QImage TintFilter::apply(const QImage& input) const {
     int height {result.height()};
     int width {result.width()};
 
+    int deltaR {static_cast<int>(tint * 35.0)};
+    int deltaG {static_cast<int>(tint * 15.0)};
+    int deltaB {static_cast<int>(tint * 35.0)};
 
     for (int y{0}; y < height; y++) {
         QRgb* row {reinterpret_cast<QRgb*>(result.scanLine(y))};
 
         for (int x{0}; x < width; x++) {
-            QRgb px {row[x]};
-
-            int r {static_cast<int>(qRed(px) + tint * 35)};
-            int g {static_cast<int>(qGreen(px) - tint * 15)};
-            int b {static_cast<int>(qBlue(px) + tint * 35)};
 
             row[x] = qRgb(
-                std::clamp(r, 0, 255),
-                std::clamp(g, 0, 255),
-                std::clamp(b, 0, 255)
+                std::clamp(qRed(row[x]) + deltaR, 0, 255),
+                std::clamp(qGreen(row[x]) - deltaG, 0, 255),
+                std::clamp(qBlue(row[x]) + deltaB, 0, 255)
 
                 );
         }

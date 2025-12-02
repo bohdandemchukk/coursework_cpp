@@ -17,20 +17,19 @@ QImage TemperatureFilter::apply(const QImage& input) const {
     int width {result.width()};
 
 
+    int deltaR {static_cast<int>(temperature * 0.6)};
+    int deltaG {static_cast<int>(temperature * 0.2)};
+    int deltaB {static_cast<int>(-temperature * 0.6)};
+
     for (int y{0}; y < height; y++) {
         QRgb* row {reinterpret_cast<QRgb*>(result.scanLine(y))};
 
         for (int x{0}; x < width; x++) {
-            QRgb px {row[x]};
-
-            int r {static_cast<int>(qRed(px) + temperature * 0.6)};
-            int g {static_cast<int>(qGreen(px) + temperature * 0.2)};
-            int b {static_cast<int>(qBlue(px) - temperature * 0.6)};
 
             row[x] = qRgb(
-                std::clamp(r, 0, 255),
-                std::clamp(g, 0, 255),
-                std::clamp(b, 0, 255)
+                std::clamp(qRed(row[x]) + deltaR, 0, 255),
+                std::clamp(qGreen(row[x]) + deltaG, 0, 255),
+                std::clamp(qBlue(row[x]) + deltaB, 0, 255)
 
             );
         }
