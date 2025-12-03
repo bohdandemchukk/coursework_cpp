@@ -24,6 +24,9 @@
 #include "gammafilter.h"
 #include "tintfilter.h"
 #include "vibrancefilter.h"
+#include "shadowfilter.h"
+#include "highlightfilter.h"
+
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -96,6 +99,16 @@ MainWindow::MainWindow(QWidget *parent)
 
     connect(ui->vibranceSlider, QSlider::valueChanged, this, [this](int value) {
         filterState.vibrance = value;
+        rebuildPipeline();
+    });
+
+    connect(ui->shadowSlider, QSlider::valueChanged, this, [this](int value) {
+        filterState.shadow = value;
+        rebuildPipeline();
+    });
+
+    connect(ui->highlightSlider, QSlider::valueChanged, this, [this](int value) {
+        filterState.highlight = value;
         rebuildPipeline();
     });
 }
@@ -171,16 +184,23 @@ void MainWindow::rebuildPipeline() {
     pipeline.addFilter(std::make_unique<BlurFilter>(filterState.blur));
     pipeline.addFilter(std::make_unique<SharpenFilter>(filterState.sharpness));
 
-    pipeline.addFilter(std::make_unique<BrightnessFilter>(filterState.brightness));
-    pipeline.addFilter(std::make_unique<ContrastFilter>(filterState.contrast));
-    pipeline.addFilter(std::make_unique<SaturationFilter>(filterState.saturation));
-    pipeline.addFilter(std::make_unique<TemperatureFilter>(filterState.temperature));
+
     pipeline.addFilter(std::make_unique<ExposureFilter>(filterState.exposure));
+    pipeline.addFilter(std::make_unique<ContrastFilter>(filterState.contrast));
+    pipeline.addFilter(std::make_unique<BrightnessFilter>(filterState.brightness));
     pipeline.addFilter(std::make_unique<GammaFilter>(filterState.gamma));
 
-    pipeline.addFilter(std::make_unique<BWFilter>(filterState.BWFilter));
+
+    pipeline.addFilter(std::make_unique<TemperatureFilter>(filterState.temperature));
     pipeline.addFilter(std::make_unique<TintFilter>(filterState.tint));
+    pipeline.addFilter(std::make_unique<SaturationFilter>(filterState.saturation));
     pipeline.addFilter(std::make_unique<VibranceFilter>(filterState.vibrance));
+
+    pipeline.addFilter(std::make_unique<ShadowFilter>(filterState.shadow));
+    pipeline.addFilter(std::make_unique<HighlightFilter>(filterState.highlight));
+
+    pipeline.addFilter(std::make_unique<BWFilter>(filterState.BWFilter));
+
 
     updateImage();
 }

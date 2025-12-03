@@ -44,6 +44,8 @@ private:
         int gamma       { 0 };
         int tint        { 0 };
         int vibrance    { 0 };
+        int shadow      { 0 };
+        int highlight   { 0 };
         bool flipH      { false };
         bool flipV      { false };
         bool BWFilter   { false };
