@@ -6,47 +6,39 @@ ShadowFilter::ShadowFilter(int shadow)
 
 
 QImage ShadowFilter::apply(const QImage& input) const {
+
     if (!isActive()) return input;
+
     QImage result {input.copy()};
-    double amount { getShadow() / 100.0}; // -1.0 до +1.0
+
+
+    double shadowBoost { getShadow() / 100.0};
     int height {result.height()};
     int width {result.width()};
 
+
     for (int y{0}; y < height; y++) {
         QRgb* row {reinterpret_cast<QRgb*>(result.scanLine(y))};
+
         for (int x{0}; x < width; x++) {
-            double r = qRed(row[x]) / 255.0;
-            double g = qGreen(row[x]) / 255.0;
-            double b = qBlue(row[x]) / 255.0;
+            QRgb px {row[x]};
 
-            // Яскравість пікселя
-            double luma = 0.299 * r + 0.587 * g + 0.114 * b;
+            double luma {0.299 * qRed(px) + 0.587 * qGreen(px) + 0.114 * qBlue(px)};
+            double factor {1.0 + shadowBoost * (1.0 - luma/255.0)};
 
-            // Маска для темних ділянок (плавна крива)
-            // Якщо luma < 0.5, то це темна ділянка
-            double mask = 0.0;
-            if (luma < 0.5) {
-                mask = (0.5 - luma) * 2.0; // 0 до 1
-                mask = std::pow(mask, 1.5); // Плавна крива
-            }
-
-            // Застосовуємо корекцію тільки до темних ділянок
-            if (mask > 0.01) {
-                // Для тіней краще додавати, а не множити
-                double boost = amount * mask * 0.3;
-
-                r += boost * (1.0 - r); // Додаємо пропорційно до простору
-                g += boost * (1.0 - g);
-                b += boost * (1.0 - b);
-            }
+            int r {static_cast<int>(qRed(px) * factor)};
+            int g {static_cast<int>(qGreen(px) * factor)};
+            int b {static_cast<int>(qBlue(px) * factor)};
 
             row[x] = qRgb(
-                std::clamp(int(r * 255), 0, 255),
-                std::clamp(int(g * 255), 0, 255),
-                std::clamp(int(b * 255), 0, 255)
+                std::clamp(r, 0, 255),
+                std::clamp(g, 0, 255),
+                std::clamp(b, 0, 255)
+
                 );
         }
     }
+
     return result;
 }
 

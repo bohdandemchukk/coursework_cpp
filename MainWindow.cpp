@@ -26,7 +26,7 @@
 #include "vibrancefilter.h"
 #include "shadowfilter.h"
 #include "highlightfilter.h"
-
+#include "clarityFilter.h"
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -111,6 +111,11 @@ MainWindow::MainWindow(QWidget *parent)
         filterState.highlight = value;
         rebuildPipeline();
     });
+
+    connect(ui->claritySlider, QSlider::valueChanged, this, [this](int value) {
+        filterState.clarity = value;
+        rebuildPipeline();
+    });
 }
 
 
@@ -189,6 +194,7 @@ void MainWindow::rebuildPipeline() {
     pipeline.addFilter(std::make_unique<ContrastFilter>(filterState.contrast));
     pipeline.addFilter(std::make_unique<BrightnessFilter>(filterState.brightness));
     pipeline.addFilter(std::make_unique<GammaFilter>(filterState.gamma));
+    pipeline.addFilter(std::make_unique<ClarityFilter>(filterState.clarity));
 
 
     pipeline.addFilter(std::make_unique<TemperatureFilter>(filterState.temperature));
