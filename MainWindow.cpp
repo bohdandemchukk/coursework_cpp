@@ -27,6 +27,7 @@
 #include "shadowfilter.h"
 #include "highlightfilter.h"
 #include "clarityFilter.h"
+#include "vignettefilter.h"
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -116,6 +117,11 @@ MainWindow::MainWindow(QWidget *parent)
         filterState.clarity = value;
         rebuildPipeline();
     });
+
+    connect(ui->vignetteSlider, QSlider::valueChanged, this, [this](int value) {
+        filterState.vignette = value;
+        rebuildPipeline();
+    });
 }
 
 
@@ -145,6 +151,9 @@ void MainWindow::on_actionOpen_triggered() {
         ui->blurSlider->setValue(0);
         ui->sharpSlider->setValue(0);
         ui->bwButton->setChecked(false);
+        ui->claritySlider->setValue(0);
+        ui->shadowSlider->setValue(0);
+        ui->highlightSlider->setValue(0);
     }
 }
 
@@ -204,8 +213,11 @@ void MainWindow::rebuildPipeline() {
 
     pipeline.addFilter(std::make_unique<ShadowFilter>(filterState.shadow));
     pipeline.addFilter(std::make_unique<HighlightFilter>(filterState.highlight));
+    pipeline.addFilter(std::make_unique<VignetteFilter>(filterState.vignette));
 
     pipeline.addFilter(std::make_unique<BWFilter>(filterState.BWFilter));
+
+
 
 
     updateImage();

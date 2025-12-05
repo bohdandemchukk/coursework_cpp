@@ -47,6 +47,7 @@ private:
         int shadow      { 0 };
         int highlight   { 0 };
         int clarity     { 0 };
+        int vignette    { 0 };
         bool flipH      { false };
         bool flipV      { false };
         bool BWFilter   { false };
