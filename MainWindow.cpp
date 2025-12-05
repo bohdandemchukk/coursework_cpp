@@ -28,6 +28,10 @@
 #include "highlightfilter.h"
 #include "clarityFilter.h"
 #include "vignettefilter.h"
+#include "grainfilter.h"
+#include "splittoningfilter.h"
+#include "fadefilter.h"
+
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -122,6 +126,21 @@ MainWindow::MainWindow(QWidget *parent)
         filterState.vignette = value;
         rebuildPipeline();
     });
+
+    connect(ui->grainSlider, QSlider::valueChanged, this, [this](int value) {
+        filterState.grain = value;
+        rebuildPipeline();
+    });
+
+    connect(ui->splitToningSlider, QSlider::valueChanged, this, [this](int value) {
+        filterState.splitToning = value;
+        rebuildPipeline();
+    });
+
+    connect(ui->fadeSlider, QSlider::valueChanged, this, [this](int value) {
+        filterState.fade = value;
+        rebuildPipeline();
+    });
 }
 
 
@@ -145,15 +164,22 @@ void MainWindow::on_actionOpen_triggered() {
         filterState = FilterState{};
         pipeline.clear();
 
+        ui->bwButton->setChecked(false);
         ui->brightnessSlider->setValue(0);
         ui->saturationSlider->setValue(0);
         ui->contrastSlider->setValue(0);
         ui->blurSlider->setValue(0);
         ui->sharpSlider->setValue(0);
-        ui->bwButton->setChecked(false);
-        ui->claritySlider->setValue(0);
+        ui->temperatureSlider->setValue(0);
+        ui->tintSlider->setValue(0);
+        ui->vibranceSlider->setValue(0);
         ui->shadowSlider->setValue(0);
         ui->highlightSlider->setValue(0);
+        ui->claritySlider->setValue(0);
+        ui->vignetteSlider->setValue(0);
+        ui->grainSlider->setValue(0);
+        ui->splitToningSlider->setValue(0);
+        ui->fadeSlider->setValue(0);
     }
 }
 
@@ -210,9 +236,13 @@ void MainWindow::rebuildPipeline() {
     pipeline.addFilter(std::make_unique<TintFilter>(filterState.tint));
     pipeline.addFilter(std::make_unique<SaturationFilter>(filterState.saturation));
     pipeline.addFilter(std::make_unique<VibranceFilter>(filterState.vibrance));
+    pipeline.addFilter(std::make_unique<FadeFilter>(filterState.fade));
 
     pipeline.addFilter(std::make_unique<ShadowFilter>(filterState.shadow));
     pipeline.addFilter(std::make_unique<HighlightFilter>(filterState.highlight));
+    pipeline.addFilter(std::make_unique<GrainFilter>(filterState.grain));
+    pipeline.addFilter(std::make_unique<SplitToningFilter>(filterState.splitToning));
+
     pipeline.addFilter(std::make_unique<VignetteFilter>(filterState.vignette));
 
     pipeline.addFilter(std::make_unique<BWFilter>(filterState.BWFilter));

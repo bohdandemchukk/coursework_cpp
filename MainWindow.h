@@ -48,6 +48,9 @@ private:
         int highlight   { 0 };
         int clarity     { 0 };
         int vignette    { 0 };
+        int grain       { 0 };
+        int splitToning { 0 };
+        int fade        { 0 };
         bool flipH      { false };
         bool flipV      { false };
         bool BWFilter   { false };
