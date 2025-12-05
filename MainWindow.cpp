@@ -31,6 +31,7 @@
 #include "grainfilter.h"
 #include "splittoningfilter.h"
 #include "fadefilter.h"
+#include "undoredo.h"
 
 
 MainWindow::MainWindow(QWidget *parent)
@@ -55,92 +56,78 @@ MainWindow::MainWindow(QWidget *parent)
         ui->scaleSlider->setValue(static_cast<int>(scale * 100));
     });
     connect(ui->brightnessSlider, &QSlider::valueChanged, this, [this](int value) {
-        filterState.brightness = value;
-        rebuildPipeline();
+        applyFilterChange(filterState.brightness, value);
     });
     connect(ui->saturationSlider, &QSlider::valueChanged, this, [this](int value) {
-        filterState.saturation = value;
-        rebuildPipeline();
+        applyFilterChange(filterState.saturation, value);
     });
 
     connect(ui->contrastSlider, &QSlider::valueChanged, this, [this](int value) {
-        filterState.contrast = value;
-        rebuildPipeline();
+        applyFilterChange(filterState.contrast, value);
     });
     connect(ui->blurSlider, &QSlider::valueChanged, this, [this](int value){
-        filterState.blur = value;
-        rebuildPipeline();
+        applyFilterChange(filterState.blur, value);
     });
     connect(ui->sharpSlider, &QSlider::valueChanged, this, [this](int value) {
-        filterState.sharpness = value;
-        rebuildPipeline();
+        applyFilterChange(filterState.sharpness, value);
     });
 
     ui->bwButton->setCheckable(true);
     connect(ui->bwButton, &QPushButton::toggled, this, [this](bool checked) {
-        filterState.BWFilter = checked;
-        rebuildPipeline();
+        applyFilterChange(filterState.BWFilter, checked);
     });
 
     connect(ui->temperatureSlider, QSlider::valueChanged, this, [this](int value) {
-        filterState.temperature = value;
-        rebuildPipeline();
+        applyFilterChange(filterState.temperature, value);
     });
 
     connect(ui->exposureSlider, QSlider::valueChanged, this, [this](int value) {
-        filterState.exposure = value;
-        rebuildPipeline();
+        applyFilterChange(filterState.exposure, value);
     });
 
     connect(ui->gammaSlider, QSlider::valueChanged, this, [this](int value) {
-        filterState.gamma = value;
-        rebuildPipeline();
+        applyFilterChange(filterState.gamma, value);
     });
 
     connect(ui->tintSlider, QSlider::valueChanged, this, [this](int value) {
-        filterState.tint = value;
-        rebuildPipeline();
+        applyFilterChange(filterState.tint, value);
     });
 
     connect(ui->vibranceSlider, QSlider::valueChanged, this, [this](int value) {
-        filterState.vibrance = value;
-        rebuildPipeline();
+        applyFilterChange(filterState.vibrance, value);
     });
 
     connect(ui->shadowSlider, QSlider::valueChanged, this, [this](int value) {
-        filterState.shadow = value;
-        rebuildPipeline();
+        applyFilterChange(filterState.shadow, value);
     });
 
     connect(ui->highlightSlider, QSlider::valueChanged, this, [this](int value) {
-        filterState.highlight = value;
-        rebuildPipeline();
+        applyFilterChange(filterState.highlight, value);
     });
 
     connect(ui->claritySlider, QSlider::valueChanged, this, [this](int value) {
-        filterState.clarity = value;
-        rebuildPipeline();
+        applyFilterChange(filterState.clarity, value);
     });
 
     connect(ui->vignetteSlider, QSlider::valueChanged, this, [this](int value) {
-        filterState.vignette = value;
-        rebuildPipeline();
+        applyFilterChange(filterState.vignette, value);
     });
 
     connect(ui->grainSlider, QSlider::valueChanged, this, [this](int value) {
-        filterState.grain = value;
-        rebuildPipeline();
+        applyFilterChange(filterState.grain, value);
     });
 
     connect(ui->splitToningSlider, QSlider::valueChanged, this, [this](int value) {
-        filterState.splitToning = value;
-        rebuildPipeline();
+        applyFilterChange(filterState.splitToning, value);
     });
 
     connect(ui->fadeSlider, QSlider::valueChanged, this, [this](int value) {
-        filterState.fade = value;
-        rebuildPipeline();
+        applyFilterChange(filterState.fade, value);
     });
+
+    connect(ui->actionUndo, &QAction::triggered, this, &MainWindow::on_actionUndo_triggered);
+    connect(ui->actionRedo, &QAction::triggered, this, &MainWindow::on_actionRedo_triggered);
+    refreshUndoRedoActions();
 }
 
 
@@ -163,6 +150,8 @@ void MainWindow::on_actionOpen_triggered() {
 
         filterState = FilterState{};
         pipeline.clear();
+        commandManager.clear();
+        suppressCommands = true;
 
         ui->bwButton->setChecked(false);
         ui->brightnessSlider->setValue(0);
@@ -180,6 +169,8 @@ void MainWindow::on_actionOpen_triggered() {
         ui->grainSlider->setValue(0);
         ui->splitToningSlider->setValue(0);
         ui->fadeSlider->setValue(0);
+        suppressCommands = false;
+        refreshUndoRedoActions();
     }
 }
 
@@ -194,23 +185,19 @@ void MainWindow::on_actionCrop_triggered() {
 
 
 void MainWindow::on_actionRotateLeft_triggered() {
-    filterState.rotateAngle -= 90;
-    rebuildPipeline();
+    applyFilterChange(filterState.rotateAngle, filterState.rotateAngle - 90);
 }
 
 void MainWindow::on_actionRotateRight_triggered() {
-    filterState.rotateAngle += 90;
-    rebuildPipeline();
+    applyFilterChange(filterState.rotateAngle, filterState.rotateAngle + 90);
 }
 
 void MainWindow::on_actionFlipHorizontally_triggered() {
-    filterState.flipH = !filterState.flipH;
-    rebuildPipeline();
+    applyFilterChange(filterState.flipH, !filterState.flipH);
 }
 
 void MainWindow::on_actionFlipVertically_triggered() {
-    filterState.flipV = !filterState.flipV;
-    rebuildPipeline();
+    applyFilterChange(filterState.flipV, !filterState.flipV);
 }
 
 
@@ -251,6 +238,26 @@ void MainWindow::rebuildPipeline() {
 
 
     updateImage();
+}
+
+void MainWindow::on_actionUndo_triggered()
+{
+    if (commandManager.undo()) {
+        refreshUndoRedoActions();
+    }
+}
+
+void MainWindow::on_actionRedo_triggered()
+{
+    if (commandManager.redo()) {
+        refreshUndoRedoActions();
+    }
+}
+
+void MainWindow::refreshUndoRedoActions()
+{
+    ui->actionUndo->setEnabled(commandManager.canUndo());
+    ui->actionRedo->setEnabled(commandManager.canRedo());
 }
 
 

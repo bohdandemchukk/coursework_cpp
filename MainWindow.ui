@@ -437,28 +437,30 @@
     </property>
     <addaction name="actionOpen"/>
    </widget>
-   <widget class="QMenu" name="menuEdit">
-    <property name="title">
-     <string>Edit</string>
-    </property>
-    <widget class="QMenu" name="menuRotate">
+    <widget class="QMenu" name="menuEdit">
+     <property name="title">
+      <string>Edit</string>
+     </property>
+     <widget class="QMenu" name="menuRotate">
      <property name="title">
       <string>Rotate</string>
      </property>
-     <addaction name="actionRotateLeft"/>
-     <addaction name="actionRotateRight"/>
+      <addaction name="actionRotateLeft"/>
+      <addaction name="actionRotateRight"/>
+     </widget>
+     <widget class="QMenu" name="menuFlip">
+      <property name="title">
+       <string>Flip</string>
+      </property>
+      <addaction name="actionFlipHorizontally"/>
+      <addaction name="actionFlipVertically"/>
+     </widget>
+     <addaction name="actionUndo"/>
+     <addaction name="actionRedo"/>
+     <addaction name="actionCrop"/>
+     <addaction name="menuRotate"/>
+     <addaction name="menuFlip"/>
     </widget>
-    <widget class="QMenu" name="menuFlip">
-     <property name="title">
-      <string>Flip</string>
-     </property>
-     <addaction name="actionFlipHorizontally"/>
-     <addaction name="actionFlipVertically"/>
-    </widget>
-    <addaction name="actionCrop"/>
-    <addaction name="menuRotate"/>
-    <addaction name="menuFlip"/>
-   </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
   </widget>
@@ -506,6 +508,28 @@
   <action name="actionFlipVertically">
    <property name="text">
     <string>Vertically</string>
+   </property>
+  </action>
+  <action name="actionUndo">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Undo</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Z</string>
+   </property>
+  </action>
+  <action name="actionRedo">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Redo</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+Z</string>
    </property>
   </action>
  </widget>

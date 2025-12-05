@@ -5,7 +5,9 @@
 #include <QWheelEvent>
 #include "MyGraphicsView.h"
 #include <QImage>
+#include <memory>
 #include "filterpipeline.h"
+#include "undoredo.h"
 
 QT_BEGIN_NAMESPACE
 
@@ -58,6 +60,12 @@ private:
 
     FilterState filterState{};
     FilterPipeline pipeline{};
+    CommandManager commandManager{};
+    bool suppressCommands { false };
+
+    template <typename T>
+    void applyFilterChange(T& target, T newValue);
+    void refreshUndoRedoActions();
 
 
 
@@ -68,9 +76,29 @@ private slots:
     void on_actionRotateRight_triggered();
     void on_actionFlipHorizontally_triggered();
     void on_actionFlipVertically_triggered();
+    void on_actionUndo_triggered();
+    void on_actionRedo_triggered();
     void updateImage();
     void rebuildPipeline();
 
 };
+
+template <typename T>
+void MainWindow::applyFilterChange(T& target, T newValue)
+{
+    auto apply = [this]() { rebuildPipeline(); };
+
+    if (suppressCommands) {
+        target = newValue;
+        apply();
+        refreshUndoRedoActions();
+        return;
+    }
+
+    if (target == newValue) return;
+
+    commandManager.executeCommand(std::make_unique<PropertyCommand<T>>(target, newValue, apply));
+    refreshUndoRedoActions();
+}
 
 #endif // MAINWINDOW_H
