@@ -25,32 +25,41 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         ${PROJECT_SOURCES}
         MyGraphicsView.h
         MyGraphicsView.cpp
-        ImageFilter.h
-        RotateFilter.h
-        RotateFilter.cpp
-        FlipFilter.h FlipFilter.cpp
-        BWFilter.h BWFilter.cpp
-        BrightnessFilter.h BrightnessFilter.cpp
-        saturationfilter.h saturationfilter.cpp
-        contrastfilter.h contrastfilter.cpp
-        gaussianblurutil.h gaussianblurutil.cpp
-        blurfilter.h blurfilter.cpp
-        sharpenfilter.h sharpenfilter.cpp
-        filterpipeline.h filterpipeline.cpp
-        undoredo.h undoredo.cpp
-        temperaturefilter.h temperaturefilter.cpp
-        exposurefilter.h exposurefilter.cpp
-        gammafilter.h gammafilter.cpp
-        tintfilter.h tintfilter.cpp
-        vibrancefilter.h vibrancefilter.cpp
-        rgbhsvutil.h rgbhsvutil.cpp
-        shadowfilter.h shadowfilter.cpp
-        highlightfilter.h highlightfilter.cpp
-        clarityFilter.h clarityFilter.cpp
-        vignettefilter.h vignettefilter.cpp
-        grainfilter.h grainfilter.cpp
-        splittoningfilter.h splittoningfilter.cpp
-        fadefilter.h fadefilter.cpp
+    filters/RotateFilter.h filters/RotateFilter.cpp
+    filters/FlipFilter.h filters/FlipFilter.cpp
+    filters/BWFilter.h filters/BWFilter.cpp
+    filters/BrightnessFilter.h filters/BrightnessFilter.cpp
+    filters/saturationfilter.h filters/saturationfilter.cpp
+    filters/contrastfilter.h filters/contrastfilter.cpp
+    filters/gaussianblurutil.h filters/gaussianblurutil.cpp
+    filters/blurfilter.h filters/blurfilter.cpp
+    filters/sharpenfilter.h filters/sharpenfilter.cpp
+    filterpipeline.h filterpipeline.cpp
+
+    filters/temperaturefilter.h filters/temperaturefilter.cpp
+    filters/exposurefilter.h filters/exposurefilter.cpp
+    filters/gammafilter.h filters/gammafilter.cpp
+    filters/tintfilter.h filters/tintfilter.cpp
+    filters/vibrancefilter.h filters/vibrancefilter.cpp
+    filters/rgbhsvutil.h filters/rgbhsvutil.cpp
+    filters/shadowfilter.h filters/shadowfilter.cpp
+    filters/highlightfilter.h filters/highlightfilter.cpp
+    filters/clarityFilter.h filters/clarityFilter.cpp
+    filters/vignettefilter.h filters/vignettefilter.cpp
+    filters/grainfilter.h filters/grainfilter.cpp
+    filters/splittoningfilter.h filters/splittoningfilter.cpp
+    filters/fadefilter.h filters/fadefilter.cpp
+
+    undoredostack.h undoredostack.cpp
+    command.h
+    changefilterintcommand.h changefilterintcommand.cpp
+    changefilterboolcommand.h changefilterboolcommand.cpp
+
+
+
+
+
+
     )
 # Define target properties for Android with Qt 6 as:
 #    set_property(TARGET ImageEditor APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
@@ -70,6 +79,7 @@ else()
     endif()
 endif()
 
+target_include_directories(ImageEditor PRIVATE filters)
 target_link_libraries(ImageEditor PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.

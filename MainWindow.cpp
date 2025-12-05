@@ -4,9 +4,6 @@
 #include <QSlider>
 #include "mygraphicsview.h"
 #include <QTransform>
-#include <QGraphicsItem>
-#include <QRgb>
-#include <QColor>
 #include <memory>
 
 #include "rotatefilter.h"
@@ -15,7 +12,6 @@
 #include "sharpenfilter.h"
 #include "BrightnessFilter.h"
 #include "contrastfilter.h"
-#include "sharpenfilter.h"
 #include "BWFilter.h"
 #include "filterpipeline.h"
 #include "saturationfilter.h"
@@ -32,17 +28,14 @@
 #include "splittoningfilter.h"
 #include "fadefilter.h"
 
-
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
     , scene{new QGraphicsScene(this)}
 {
-
     ui->setupUi(this);
     ui->graphicsView->setScene(scene);
     ui->graphicsView->setResizeAnchor(QGraphicsView::AnchorUnderMouse);
-
 
     connect(ui->scaleSlider, &QSlider::valueChanged, this, [this](int value) {
         double scale = static_cast<double>(value) / 100.0;
@@ -51,102 +44,170 @@ MainWindow::MainWindow(QWidget *parent)
         ui->graphicsView->setTransform(t);
     });
 
-    connect(ui->graphicsView, &MyGraphicsView::zoomChanged, this, [this] (double scale) {
+    connect(ui->graphicsView, &MyGraphicsView::zoomChanged, this, [this](double scale) {
         ui->scaleSlider->setValue(static_cast<int>(scale * 100));
     });
-    connect(ui->brightnessSlider, &QSlider::valueChanged, this, [this](int value) {
-        filterState.brightness = value;
-        rebuildPipeline();
-    });
-    connect(ui->saturationSlider, &QSlider::valueChanged, this, [this](int value) {
-        filterState.saturation = value;
-        rebuildPipeline();
+
+    connect(ui->brightnessSlider, &QSlider::sliderReleased, this, [this]() {
+        if (!m_isUpdatingSlider) {
+            changeFilterInt(&filterState.brightness, ui->brightnessSlider->value());
+        }
     });
 
-    connect(ui->contrastSlider, &QSlider::valueChanged, this, [this](int value) {
-        filterState.contrast = value;
-        rebuildPipeline();
+    connect(ui->saturationSlider, &QSlider::sliderReleased, this, [this]() {
+        if (!m_isUpdatingSlider) {
+            changeFilterInt(&filterState.saturation, ui->saturationSlider->value());
+        }
     });
-    connect(ui->blurSlider, &QSlider::valueChanged, this, [this](int value){
-        filterState.blur = value;
-        rebuildPipeline();
+
+    connect(ui->contrastSlider, &QSlider::sliderReleased, this, [this]() {
+        if (!m_isUpdatingSlider) {
+            changeFilterInt(&filterState.contrast, ui->contrastSlider->value());
+        }
     });
-    connect(ui->sharpSlider, &QSlider::valueChanged, this, [this](int value) {
-        filterState.sharpness = value;
-        rebuildPipeline();
+
+    connect(ui->blurSlider, &QSlider::sliderReleased, this, [this]() {
+        if (!m_isUpdatingSlider) {
+            changeFilterInt(&filterState.blur, ui->blurSlider->value());
+        }
     });
+
+
+    connect(ui->sharpSlider, &QSlider::sliderReleased, this, [this]() {
+        if (!m_isUpdatingSlider) {
+            changeFilterInt(&filterState.sharpness, ui->sharpSlider->value());
+        }
+    });
+
 
     ui->bwButton->setCheckable(true);
     connect(ui->bwButton, &QPushButton::toggled, this, [this](bool checked) {
-        filterState.BWFilter = checked;
-        rebuildPipeline();
+        if (!m_isUpdatingSlider) {
+            changeFilterBool(&filterState.BWFilter, checked);
+        }
     });
 
-    connect(ui->temperatureSlider, QSlider::valueChanged, this, [this](int value) {
-        filterState.temperature = value;
-        rebuildPipeline();
+
+    connect(ui->temperatureSlider, &QSlider::sliderReleased, this, [this]() {
+        if (!m_isUpdatingSlider) {
+            changeFilterInt(&filterState.temperature, ui->temperatureSlider->value());
+        }
     });
 
-    connect(ui->exposureSlider, QSlider::valueChanged, this, [this](int value) {
-        filterState.exposure = value;
-        rebuildPipeline();
+
+    connect(ui->exposureSlider, &QSlider::sliderReleased, this, [this]() {
+        if (!m_isUpdatingSlider) {
+            changeFilterInt(&filterState.exposure, ui->exposureSlider->value());
+        }
     });
 
-    connect(ui->gammaSlider, QSlider::valueChanged, this, [this](int value) {
-        filterState.gamma = value;
-        rebuildPipeline();
+
+    connect(ui->gammaSlider, &QSlider::sliderReleased, this, [this]() {
+        if (!m_isUpdatingSlider) {
+            changeFilterInt(&filterState.gamma, ui->gammaSlider->value());
+        }
     });
 
-    connect(ui->tintSlider, QSlider::valueChanged, this, [this](int value) {
-        filterState.tint = value;
-        rebuildPipeline();
+
+    connect(ui->tintSlider, &QSlider::sliderReleased, this, [this]() {
+        if (!m_isUpdatingSlider) {
+            changeFilterInt(&filterState.tint, ui->tintSlider->value());
+        }
     });
 
-    connect(ui->vibranceSlider, QSlider::valueChanged, this, [this](int value) {
-        filterState.vibrance = value;
-        rebuildPipeline();
+
+    connect(ui->vibranceSlider, &QSlider::sliderReleased, this, [this]() {
+        if (!m_isUpdatingSlider) {
+            changeFilterInt(&filterState.vibrance, ui->vibranceSlider->value());
+        }
     });
 
-    connect(ui->shadowSlider, QSlider::valueChanged, this, [this](int value) {
-        filterState.shadow = value;
-        rebuildPipeline();
+
+    connect(ui->shadowSlider, &QSlider::sliderReleased, this, [this]() {
+        if (!m_isUpdatingSlider) {
+            changeFilterInt(&filterState.shadow, ui->shadowSlider->value());
+        }
     });
 
-    connect(ui->highlightSlider, QSlider::valueChanged, this, [this](int value) {
-        filterState.highlight = value;
-        rebuildPipeline();
+
+    connect(ui->highlightSlider, &QSlider::sliderReleased, this, [this]() {
+        if (!m_isUpdatingSlider) {
+            changeFilterInt(&filterState.highlight, ui->highlightSlider->value());
+        }
     });
 
-    connect(ui->claritySlider, QSlider::valueChanged, this, [this](int value) {
-        filterState.clarity = value;
-        rebuildPipeline();
+
+    connect(ui->claritySlider, &QSlider::sliderReleased, this, [this]() {
+        if (!m_isUpdatingSlider) {
+            changeFilterInt(&filterState.clarity, ui->claritySlider->value());
+        }
     });
 
-    connect(ui->vignetteSlider, QSlider::valueChanged, this, [this](int value) {
-        filterState.vignette = value;
-        rebuildPipeline();
+
+    connect(ui->vignetteSlider, &QSlider::sliderReleased, this, [this]() {
+        if (!m_isUpdatingSlider) {
+            changeFilterInt(&filterState.vignette, ui->vignetteSlider->value());
+        }
     });
 
-    connect(ui->grainSlider, QSlider::valueChanged, this, [this](int value) {
-        filterState.grain = value;
-        rebuildPipeline();
+
+    connect(ui->grainSlider, &QSlider::sliderReleased, this, [this]() {
+        if (!m_isUpdatingSlider) {
+            changeFilterInt(&filterState.grain, ui->grainSlider->value());
+        }
     });
 
-    connect(ui->splitToningSlider, QSlider::valueChanged, this, [this](int value) {
-        filterState.splitToning = value;
-        rebuildPipeline();
+
+    connect(ui->splitToningSlider, &QSlider::sliderReleased, this, [this]() {
+        if (!m_isUpdatingSlider) {
+            changeFilterInt(&filterState.splitToning, ui->splitToningSlider->value());
+        }
     });
 
-    connect(ui->fadeSlider, QSlider::valueChanged, this, [this](int value) {
-        filterState.fade = value;
-        rebuildPipeline();
+
+    connect(ui->fadeSlider, &QSlider::sliderReleased, this, [this]() {
+        if (!m_isUpdatingSlider) {
+            changeFilterInt(&filterState.fade, ui->fadeSlider->value());
+        }
     });
+
+    updateUndoRedoButtons();
 }
-
 
 MainWindow::~MainWindow()
 {
     delete ui;
+}
+
+
+void MainWindow::changeFilterInt(int* target, int newValue) {
+    int oldValue = *target;
+
+    auto command = std::make_unique<ChangeFilterIntCommand>(
+        target, oldValue, newValue,
+        [this]() {
+            this->rebuildPipeline();
+        }
+        );
+    undoRedoStack.push(std::move(command));
+    updateUndoRedoButtons();
+}
+
+void MainWindow::changeFilterBool(bool* target, bool newValue) {
+    bool oldValue = *target;
+
+    auto command = std::make_unique<ChangeFilterBoolCommand>(
+        target,
+        oldValue,
+        newValue,
+        [this]() {
+            this->rebuildPipeline();
+
+        }
+        );
+
+    undoRedoStack.push(std::move(command));
+    updateUndoRedoButtons();
 }
 
 void MainWindow::on_actionOpen_triggered() {
@@ -154,7 +215,7 @@ void MainWindow::on_actionOpen_triggered() {
         this,
         "Open Image",
         "",
-            "Images (*.png *.jpg *.jpeg *.webp *.bmp)")};
+        "Images (*.png *.jpg *.jpeg *.webp *.bmp)")};
 
     if (!fileName.isEmpty()) {
         scene->clear();
@@ -163,7 +224,9 @@ void MainWindow::on_actionOpen_triggered() {
 
         filterState = FilterState{};
         pipeline.clear();
+        undoRedoStack.clear();
 
+        m_isUpdatingSlider = true;
         ui->bwButton->setChecked(false);
         ui->brightnessSlider->setValue(0);
         ui->saturationSlider->setValue(0);
@@ -180,39 +243,31 @@ void MainWindow::on_actionOpen_triggered() {
         ui->grainSlider->setValue(0);
         ui->splitToningSlider->setValue(0);
         ui->fadeSlider->setValue(0);
+        m_isUpdatingSlider = false;
+
+        updateUndoRedoButtons();
     }
 }
 
-
-///////////////////////////////////////
 void MainWindow::on_actionCrop_triggered() {
     ui->graphicsView->setCropMode(true);
 }
-//////////////////////////////////////
-
-
-
 
 void MainWindow::on_actionRotateLeft_triggered() {
-    filterState.rotateAngle -= 90;
-    rebuildPipeline();
+    changeFilterInt(&filterState.rotateAngle, filterState.rotateAngle - 90);
 }
 
 void MainWindow::on_actionRotateRight_triggered() {
-    filterState.rotateAngle += 90;
-    rebuildPipeline();
+    changeFilterInt(&filterState.rotateAngle, filterState.rotateAngle + 90);
 }
 
 void MainWindow::on_actionFlipHorizontally_triggered() {
-    filterState.flipH = !filterState.flipH;
-    rebuildPipeline();
+    changeFilterBool(&filterState.flipH, !filterState.flipH);
 }
 
 void MainWindow::on_actionFlipVertically_triggered() {
-    filterState.flipV = !filterState.flipV;
-    rebuildPipeline();
+    changeFilterBool(&filterState.flipV, !filterState.flipV);
 }
-
 
 void MainWindow::rebuildPipeline() {
     pipeline.clear();
@@ -224,13 +279,11 @@ void MainWindow::rebuildPipeline() {
     pipeline.addFilter(std::make_unique<BlurFilter>(filterState.blur));
     pipeline.addFilter(std::make_unique<SharpenFilter>(filterState.sharpness));
 
-
     pipeline.addFilter(std::make_unique<ExposureFilter>(filterState.exposure));
     pipeline.addFilter(std::make_unique<ContrastFilter>(filterState.contrast));
     pipeline.addFilter(std::make_unique<BrightnessFilter>(filterState.brightness));
     pipeline.addFilter(std::make_unique<GammaFilter>(filterState.gamma));
     pipeline.addFilter(std::make_unique<ClarityFilter>(filterState.clarity));
-
 
     pipeline.addFilter(std::make_unique<TemperatureFilter>(filterState.temperature));
     pipeline.addFilter(std::make_unique<TintFilter>(filterState.tint));
@@ -244,24 +297,73 @@ void MainWindow::rebuildPipeline() {
     pipeline.addFilter(std::make_unique<SplitToningFilter>(filterState.splitToning));
 
     pipeline.addFilter(std::make_unique<VignetteFilter>(filterState.vignette));
-
     pipeline.addFilter(std::make_unique<BWFilter>(filterState.BWFilter));
-
-
-
 
     updateImage();
 }
 
+void MainWindow::on_actionUndo_triggered() {
+    m_isUpdatingSlider = true;
+    undoRedoStack.undo();
 
+    ui->brightnessSlider->setValue(filterState.brightness);
+    ui->saturationSlider->setValue(filterState.saturation);
+    ui->contrastSlider->setValue(filterState.contrast);
+    ui->blurSlider->setValue(filterState.blur);
+    ui->sharpSlider->setValue(filterState.sharpness);
+    ui->temperatureSlider->setValue(filterState.temperature);
+    ui->exposureSlider->setValue(filterState.exposure);
+    ui->gammaSlider->setValue(filterState.gamma);
+    ui->tintSlider->setValue(filterState.tint);
+    ui->vibranceSlider->setValue(filterState.vibrance);
+    ui->shadowSlider->setValue(filterState.shadow);
+    ui->highlightSlider->setValue(filterState.highlight);
+    ui->claritySlider->setValue(filterState.clarity);
+    ui->vignetteSlider->setValue(filterState.vignette);
+    ui->grainSlider->setValue(filterState.grain);
+    ui->splitToningSlider->setValue(filterState.splitToning);
+    ui->fadeSlider->setValue(filterState.fade);
+    ui->bwButton->setChecked(filterState.BWFilter);
 
+    m_isUpdatingSlider = false;
+    updateUndoRedoButtons();
+}
+
+void MainWindow::on_actionRedo_triggered() {
+    m_isUpdatingSlider = true;
+    undoRedoStack.redo();
+
+    ui->brightnessSlider->setValue(filterState.brightness);
+    ui->saturationSlider->setValue(filterState.saturation);
+    ui->contrastSlider->setValue(filterState.contrast);
+    ui->blurSlider->setValue(filterState.blur);
+    ui->sharpSlider->setValue(filterState.sharpness);
+    ui->temperatureSlider->setValue(filterState.temperature);
+    ui->exposureSlider->setValue(filterState.exposure);
+    ui->gammaSlider->setValue(filterState.gamma);
+    ui->tintSlider->setValue(filterState.tint);
+    ui->vibranceSlider->setValue(filterState.vibrance);
+    ui->shadowSlider->setValue(filterState.shadow);
+    ui->highlightSlider->setValue(filterState.highlight);
+    ui->claritySlider->setValue(filterState.clarity);
+    ui->vignetteSlider->setValue(filterState.vignette);
+    ui->grainSlider->setValue(filterState.grain);
+    ui->splitToningSlider->setValue(filterState.splitToning);
+    ui->fadeSlider->setValue(filterState.fade);
+    ui->bwButton->setChecked(filterState.BWFilter);
+
+    m_isUpdatingSlider = false;
+    updateUndoRedoButtons();
+}
+
+void MainWindow::updateUndoRedoButtons() {
+    ui->actionUndo->setEnabled(undoRedoStack.canUndo());
+    ui->actionRedo->setEnabled(undoRedoStack.canRedo());
+}
 
 void MainWindow::updateImage() {
     if (ui->graphicsView->getPixmap().isNull()) return;
 
     QImage result {pipeline.process(originalImage)};
-
     ui->graphicsView->setPixmap(QPixmap::fromImage(result));
 }
-
-

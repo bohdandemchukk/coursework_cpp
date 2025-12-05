@@ -6,11 +6,11 @@
 #include "MyGraphicsView.h"
 #include <QImage>
 #include "filterpipeline.h"
+#include "undoredostack.h"
+#include "changefilterintcommand.h"
+#include "changefilterboolcommand.h"
 
 QT_BEGIN_NAMESPACE
-
-
-
 
 namespace Ui {
 class MainWindow;
@@ -26,7 +26,6 @@ public:
     ~MainWindow();
 
     static QImage originalImage;
-
 
 private:
     Ui::MainWindow *ui;
@@ -58,8 +57,18 @@ private:
 
     FilterState filterState{};
     FilterPipeline pipeline{};
+    UndoRedoStack undoRedoStack{};
+
+    bool m_isUpdatingSlider = false;
 
 
+    void changeFilterInt(int* target, int newValue);
+
+
+    void changeFilterBool(bool* target, bool newValue);
+
+
+    void updateUndoRedoButtons();
 
 private slots:
     void on_actionOpen_triggered();
@@ -70,7 +79,8 @@ private slots:
     void on_actionFlipVertically_triggered();
     void updateImage();
     void rebuildPipeline();
-
+    void on_actionUndo_triggered();
+    void on_actionRedo_triggered();
 };
 
 #endif // MAINWINDOW_H
