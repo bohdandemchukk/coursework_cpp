@@ -54,6 +54,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     command.h
     changefilterintcommand.h changefilterintcommand.cpp
     changefilterboolcommand.h changefilterboolcommand.cpp
+    cropcommand.h cropcommand.cpp
 
 
 

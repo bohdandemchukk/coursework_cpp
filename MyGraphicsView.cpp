@@ -78,7 +78,8 @@ void MyGraphicsView::mouseReleaseEvent(QMouseEvent *event) {
         }
 
         setCropMode(false);
-        MainWindow::originalImage = cropped.toImage();
+
+        emit cropFinished(sceneRect.toRect());
 
     }
 

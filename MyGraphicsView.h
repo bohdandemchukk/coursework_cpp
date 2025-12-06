@@ -7,6 +7,7 @@
 #include <QPoint>
 #include <QRubberBand>
 #include <QPixmap>
+#include <QRect>
 #include <QGraphicsPixmapItem>
 
 
@@ -45,7 +46,7 @@ public:
 
 signals:
     void zoomChanged(double scale);
-
+    void cropFinished(QRect rect);
 protected:
     void wheelEvent(QWheelEvent *event) override;
     void mousePressEvent(QMouseEvent *event) override;

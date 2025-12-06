@@ -27,6 +27,7 @@
 #include "grainfilter.h"
 #include "splittoningfilter.h"
 #include "fadefilter.h"
+#include "cropcommand.h"
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -171,6 +172,8 @@ MainWindow::MainWindow(QWidget *parent)
         }
     });
 
+    connect(ui->graphicsView, &MyGraphicsView::cropFinished, this, &MainWindow::onCropFinished);
+
     updateUndoRedoButtons();
 }
 
@@ -181,22 +184,22 @@ MainWindow::~MainWindow()
 
 
 void MainWindow::changeFilterInt(int* target, int newValue) {
-    int oldValue = *target;
+    int oldValue {*target};
 
-    auto command = std::make_unique<ChangeFilterIntCommand>(
+    auto command {std::make_unique<ChangeFilterIntCommand>(
         target, oldValue, newValue,
         [this]() {
             this->rebuildPipeline();
         }
-        );
+        )};
     undoRedoStack.push(std::move(command));
     updateUndoRedoButtons();
 }
 
 void MainWindow::changeFilterBool(bool* target, bool newValue) {
-    bool oldValue = *target;
+    bool oldValue {*target};
 
-    auto command = std::make_unique<ChangeFilterBoolCommand>(
+    auto command {std::make_unique<ChangeFilterBoolCommand>(
         target,
         oldValue,
         newValue,
@@ -204,7 +207,7 @@ void MainWindow::changeFilterBool(bool* target, bool newValue) {
             this->rebuildPipeline();
 
         }
-        );
+        )};
 
     undoRedoStack.push(std::move(command));
     updateUndoRedoButtons();
@@ -251,6 +254,19 @@ void MainWindow::on_actionOpen_triggered() {
 
 void MainWindow::on_actionCrop_triggered() {
     ui->graphicsView->setCropMode(true);
+}
+
+void MainWindow::onCropFinished(const QRect& rect) {
+    auto cmd {std::make_unique<CropCommand>(
+        &originalImage,
+        rect,
+        [this]() {
+            this->updateImage();
+        }
+    )};
+
+    undoRedoStack.push(std::move(cmd));
+    updateUndoRedoButtons();
 }
 
 void MainWindow::on_actionRotateLeft_triggered() {
