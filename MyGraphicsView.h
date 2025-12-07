@@ -42,6 +42,14 @@ public:
         m_cropMode = enabled;
     }
 
+    void setPanMode(bool enabled) {
+        m_panMode = enabled;
+    }
+
+    bool getPanMode() {
+        return m_panMode;
+    }
+
 
 
 signals:
@@ -57,13 +65,12 @@ protected:
 private:
 
     bool m_cropMode {false};
-
-    QPixmap m_pixmap{};
-
-
     QPoint m_cropStart {};
 
+    bool m_panMode {false};
+    QPoint m_lastPanPoint{};
 
+    QPixmap m_pixmap{};
     QRubberBand *rubberBand{nullptr};
 
 

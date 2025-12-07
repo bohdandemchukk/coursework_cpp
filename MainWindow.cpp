@@ -402,8 +402,8 @@ void MainWindow::setupShortcuts() {
     ui->actionCrop->setShortcut(QKeySequence("C"));
     ui->actionRotateLeft->setShortcut(QKeySequence("Ctrl+["));
     ui->actionRotateRight->setShortcut(QKeySequence("Ctrl+]"));
-    ui->actionFlipHorizontally->setShortcut(QKeySequence("H"));
-    ui->actionFlipVertically->setShortcut(QKeySequence("V"));
+    ui->actionFlipHorizontally->setShortcut(QKeySequence("Ctrl+H"));
+    ui->actionFlipVertically->setShortcut(QKeySequence("Ctrl+V"));
     ui->actionResetZoom->setShortcut(QKeySequence("Ctrl+1"));
     ui->actionFitToScreen->setShortcut(QKeySequence("Ctrl+0"));
 
@@ -426,7 +426,17 @@ void MainWindow::setupShortcuts() {
         ui->scaleSlider->setValue(ui->scaleSlider->value() - 5);
     });
 
+    QShortcut* panTool {new QShortcut(QKeySequence("H"), this)};
+    connect(panTool, &QShortcut::activated, this, [this]() {
+        m_isPanToolActive = !m_isPanToolActive;
+        updatePanMode();
+    });
 
+    QShortcut* cancelPanTool {new QShortcut(QKeySequence("Escape"), this)};
+    connect(cancelPanTool, &QShortcut::activated, this, [this]() {
+        m_isPanToolActive = false;
+        updatePanMode();
+    });
 }
 
 
@@ -447,4 +457,43 @@ void MainWindow::on_actionFitToScreen_triggered()
     m_isUpdatingSlider = true;
     ui->scaleSlider->setValue(sliderValue);
     m_isUpdatingSlider = false;
+}
+
+void MainWindow::on_actionPan_triggered() {
+    m_isPanToolActive = !m_isPanToolActive;
+    updatePanMode();
+}
+
+
+void MainWindow::updatePanMode() {
+    ui->graphicsView->setPanMode(m_isPanToolActive || m_isSpacePanActive);
+
+    if (ui->graphicsView->getPanMode()) {
+        ui->graphicsView->setCursor(Qt::OpenHandCursor);
+    }
+
+    else {
+        ui->graphicsView->unsetCursor();
+    }
+
+
+}
+
+
+void MainWindow::keyPressEvent(QKeyEvent *event) {
+    if (event->key() == Qt::Key_Space) {
+        m_isSpacePanActive = true;
+        updatePanMode();
+    }
+
+    QMainWindow::keyPressEvent(event);
+}
+
+void MainWindow::keyReleaseEvent(QKeyEvent *event) {
+    if (event->key() == Qt::Key_Space) {
+        m_isSpacePanActive = false;
+        updatePanMode();
+    }
+
+    QMainWindow::keyReleaseEvent(event);
 }

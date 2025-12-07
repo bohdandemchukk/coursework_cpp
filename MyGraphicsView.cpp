@@ -1,8 +1,8 @@
 #include "MyGraphicsView.h"
 #include "MainWindow.h"
 #include <QRectF>
-
-
+#include <QPointF>
+#include <QScrollBar>
 
 QImage MainWindow::originalImage;
 
@@ -33,38 +33,56 @@ void MyGraphicsView::wheelEvent(QWheelEvent *event) {
 
 void MyGraphicsView::mousePressEvent(QMouseEvent *event) {
 
-    if (!getCropMode()) {
-        QGraphicsView::mousePressEvent(event);
+
+    if (getPanMode() && event->button() == Qt::LeftButton) {
+        m_lastPanPoint = event->pos();
+        setCursor(Qt::ClosedHandCursor);
+        event->accept();
         return;
     }
 
-    if (event->button() == Qt::LeftButton) {
+    if (getCropMode() && event->button() == Qt::LeftButton) {
         setCropStart(event->pos());
         rubberBand->setGeometry(QRect(getCropStart(), QSize()));
         rubberBand->show();
     }
+
+    if (!getCropMode() && !getPanMode()) {
+        QGraphicsView::mousePressEvent(event);
+        return;
+    }
+
     QGraphicsView::mousePressEvent(event);
 }
 
 void MyGraphicsView::mouseMoveEvent(QMouseEvent *event) {
 
-    if (!getCropMode()) {
+    if (getCropMode() && rubberBand->isVisible()) {
+        rubberBand->setGeometry(QRect(getCropStart(), event->pos()).normalized());
+    }
+
+    if (getPanMode() && (event->buttons() & Qt::LeftButton)) {
+        QPoint delta = m_lastPanPoint - event->pos();
+
+        horizontalScrollBar()->setValue(horizontalScrollBar()->value() + delta.x());
+        verticalScrollBar()->setValue(verticalScrollBar()->value() + delta.y());
+
+        m_lastPanPoint = event->pos();
+        event->accept();
+        return;
+    }
+
+    if (!getCropMode() && !getPanMode()) {
         QGraphicsView::mouseMoveEvent(event);
         return;
     }
 
-    if (rubberBand->isVisible()) {
-        rubberBand->setGeometry(QRect(getCropStart(), event->pos()).normalized());
-    }
+
     QGraphicsView::mouseMoveEvent(event);
 }
 
 void MyGraphicsView::mouseReleaseEvent(QMouseEvent *event) {
 
-    if (!getCropMode()) {
-        QGraphicsView::mouseReleaseEvent(event);
-        return;
-    }
 
     if (getCropMode() && event->button() == Qt::LeftButton && rubberBand->isVisible()) {
         rubberBand->hide();
@@ -82,6 +100,20 @@ void MyGraphicsView::mouseReleaseEvent(QMouseEvent *event) {
         emit cropFinished(sceneRect.toRect());
 
     }
+
+    if (getPanMode() && event->button() == Qt::LeftButton) {
+        setCursor(Qt::OpenHandCursor);
+        event->accept();
+        return;
+    }
+
+
+
+    if (!getCropMode() && !getPanMode()) {
+        QGraphicsView::mouseReleaseEvent(event);
+        return;
+    }
+
 
     QGraphicsView::mouseReleaseEvent(event);
 }

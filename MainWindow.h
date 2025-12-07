@@ -27,6 +27,10 @@ public:
 
     static QImage originalImage;
 
+protected:
+    void keyPressEvent(QKeyEvent* event) override;
+    void keyReleaseEvent(QKeyEvent* event) override;
+
 private:
     Ui::MainWindow *ui;
     QGraphicsScene *scene;
@@ -61,7 +65,10 @@ private:
     FilterPipeline pipeline{};
     UndoRedoStack undoRedoStack{};
 
-    bool m_isUpdatingSlider = false;
+    bool m_isUpdatingSlider {false};
+
+    bool m_isPanToolActive {false};
+    bool m_isSpacePanActive {false};
 
 
     void changeFilterInt(int* target, int newValue);
@@ -86,6 +93,8 @@ private slots:
     void on_actionRedo_triggered();
     void onCropFinished(const QRect& rect);
     void on_actionFitToScreen_triggered();
+    void on_actionPan_triggered();
+    void updatePanMode();
 };
 
 #endif // MAINWINDOW_H

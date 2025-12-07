@@ -472,6 +472,7 @@
     </property>
     <addaction name="actionResetZoom"/>
     <addaction name="actionFitToScreen"/>
+    <addaction name="actionPan"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
@@ -542,6 +543,11 @@
   <action name="actionFitToScreen">
    <property name="text">
     <string>Fit To Screen</string>
+   </property>
+  </action>
+  <action name="actionPan">
+   <property name="text">
+    <string>Pan</string>
    </property>
   </action>
  </widget>
