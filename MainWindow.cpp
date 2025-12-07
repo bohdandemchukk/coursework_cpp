@@ -5,6 +5,8 @@
 #include "mygraphicsview.h"
 #include <QTransform>
 #include <memory>
+#include <QShortcut>
+
 
 #include "rotatefilter.h"
 #include "flipfilter.h"
@@ -174,6 +176,8 @@ MainWindow::MainWindow(QWidget *parent)
 
     connect(ui->graphicsView, &MyGraphicsView::cropFinished, this, &MainWindow::onCropFinished);
 
+    setupShortcuts();
+
     updateUndoRedoButtons();
 }
 
@@ -267,6 +271,10 @@ void MainWindow::onCropFinished(const QRect& rect) {
 
     undoRedoStack.push(std::move(cmd));
     updateUndoRedoButtons();
+}
+
+void MainWindow::on_actionResetZoom_triggered() {
+    ui->scaleSlider->setValue(100);
 }
 
 void MainWindow::on_actionRotateLeft_triggered() {
@@ -382,4 +390,38 @@ void MainWindow::updateImage() {
 
     QImage result {pipeline.process(originalImage)};
     ui->graphicsView->setPixmap(QPixmap::fromImage(result));
+}
+
+
+void MainWindow::setupShortcuts() {
+
+    ui->actionOpen->setShortcut(QKeySequence("Ctrl+O"));
+
+    ui->actionUndo->setShortcut(QKeySequence("Ctrl+Z"));
+    ui->actionRedo->setShortcuts({QKeySequence("Ctrl+Y"), QKeySequence("Ctrl+Shift+Z")});
+    ui->actionCrop->setShortcut(QKeySequence("C"));
+    ui->actionRotateLeft->setShortcut(QKeySequence("Ctrl+["));
+    ui->actionRotateRight->setShortcut(QKeySequence("Ctrl+]"));
+    ui->actionFlipHorizontally->setShortcut(QKeySequence("H"));
+    ui->actionFlipVertically->setShortcut(QKeySequence("V"));
+    ui->actionResetZoom->setShortcut(QKeySequence("Ctrl+1"));
+
+    QShortcut* zoomIn {new QShortcut(QKeySequence("+"), this)};
+    QShortcut* zoomIn2 {new QShortcut(QKeySequence("="), this)};
+
+    connect(zoomIn, &QShortcut::activated, this, [this]() {
+        ui->scaleSlider->setValue(ui->scaleSlider->value() + 5);
+    });
+
+    connect(zoomIn2, &QShortcut::activated, this, [this]() {
+        ui->scaleSlider->setValue(ui->scaleSlider->value() + 5);
+    });
+
+
+    QShortcut* zoomOut {new QShortcut(QKeySequence("-"), this)};
+    connect(zoomOut, &QShortcut::activated, this, [this]() {
+        ui->scaleSlider->setValue(ui->scaleSlider->value() - 5);
+    });
+
+
 }

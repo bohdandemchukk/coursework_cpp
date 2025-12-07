@@ -31,6 +31,8 @@ private:
     Ui::MainWindow *ui;
     QGraphicsScene *scene;
 
+    void setupShortcuts();
+
     struct FilterState {
         int brightness  { 0 };
         int saturation  { 0 };
@@ -77,6 +79,7 @@ private slots:
     void on_actionRotateRight_triggered();
     void on_actionFlipHorizontally_triggered();
     void on_actionFlipVertically_triggered();
+    void on_actionResetZoom_triggered();
     void updateImage();
     void rebuildPipeline();
     void on_actionUndo_triggered();
