@@ -6,7 +6,7 @@
 #include <QTransform>
 #include <memory>
 #include <QShortcut>
-
+#include <algorithm>
 
 #include "rotatefilter.h"
 #include "flipfilter.h"
@@ -405,6 +405,8 @@ void MainWindow::setupShortcuts() {
     ui->actionFlipHorizontally->setShortcut(QKeySequence("H"));
     ui->actionFlipVertically->setShortcut(QKeySequence("V"));
     ui->actionResetZoom->setShortcut(QKeySequence("Ctrl+1"));
+    ui->actionFitToScreen->setShortcut(QKeySequence("Ctrl+0"));
+
 
     QShortcut* zoomIn {new QShortcut(QKeySequence("+"), this)};
     QShortcut* zoomIn2 {new QShortcut(QKeySequence("="), this)};
@@ -418,10 +420,31 @@ void MainWindow::setupShortcuts() {
     });
 
 
+
     QShortcut* zoomOut {new QShortcut(QKeySequence("-"), this)};
     connect(zoomOut, &QShortcut::activated, this, [this]() {
         ui->scaleSlider->setValue(ui->scaleSlider->value() - 5);
     });
 
 
+}
+
+
+void MainWindow::on_actionFitToScreen_triggered()
+{
+    if (originalImage.isNull()) return;
+
+    QSize imgSize {originalImage.size()};
+    QSize viewSize {ui->graphicsView->viewport()->size()};
+
+    double scaleX {static_cast<double>(viewSize.width()) / static_cast<double>(imgSize.width())};
+    double scaleY {static_cast<double>(viewSize.height()) / static_cast<double>(imgSize.height())};
+
+    double scale {std::min(scaleX, scaleY)};
+
+    int sliderValue {static_cast<int>(scale * 100.0)};
+
+    m_isUpdatingSlider = true;
+    ui->scaleSlider->setValue(sliderValue);
+    m_isUpdatingSlider = false;
 }

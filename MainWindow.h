@@ -85,6 +85,7 @@ private slots:
     void on_actionUndo_triggered();
     void on_actionRedo_triggered();
     void onCropFinished(const QRect& rect);
+    void on_actionFitToScreen_triggered();
 };
 
 #endif // MAINWINDOW_H
