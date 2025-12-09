@@ -1,12 +1,24 @@
 #include "MainWindow.h"
-#include "./ui_MainWindow.h"
+
 #include <QFileDialog>
-#include <QSlider>
-#include "mygraphicsview.h"
-#include <QTransform>
-#include <memory>
+#include <QMenuBar>
+#include <QMenu>
+#include <QToolBar>
+#include <QStatusBar>
+#include <QScrollArea>
+#include <QVBoxLayout>
+#include <QHBoxLayout>
+#include <QKeyEvent>
 #include <QShortcut>
+#include <QLabel>
+#include <QSlider>
+#include <QPushButton>
+#include <QCheckBox>
+#include <QTransform>
 #include <algorithm>
+#include <QToolButton>
+#include <QMessageBox>
+#include "cropcommand.h"
 
 #include "rotatefilter.h"
 #include "flipfilter.h"
@@ -29,276 +41,715 @@
 #include "grainfilter.h"
 #include "splittoningfilter.h"
 #include "fadefilter.h"
-#include "cropcommand.h"
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
-    , ui(new Ui::MainWindow)
-    , scene{new QGraphicsScene(this)}
 {
-    ui->setupUi(this);
-    ui->graphicsView->setScene(scene);
-    ui->graphicsView->setResizeAnchor(QGraphicsView::AnchorUnderMouse);
-
-    connect(ui->scaleSlider, &QSlider::valueChanged, this, [this](int value) {
-        double scale = static_cast<double>(value) / 100.0;
-        QTransform t;
-        t.scale(scale, scale);
-        ui->graphicsView->setTransform(t);
-    });
-
-    connect(ui->graphicsView, &MyGraphicsView::zoomChanged, this, [this](double scale) {
-        ui->scaleSlider->setValue(static_cast<int>(scale * 100));
-    });
-
-    connect(ui->brightnessSlider, &QSlider::sliderReleased, this, [this]() {
-        if (!m_isUpdatingSlider) {
-            changeFilterInt(&filterState.brightness, ui->brightnessSlider->value());
-        }
-    });
-
-    connect(ui->saturationSlider, &QSlider::sliderReleased, this, [this]() {
-        if (!m_isUpdatingSlider) {
-            changeFilterInt(&filterState.saturation, ui->saturationSlider->value());
-        }
-    });
-
-    connect(ui->contrastSlider, &QSlider::sliderReleased, this, [this]() {
-        if (!m_isUpdatingSlider) {
-            changeFilterInt(&filterState.contrast, ui->contrastSlider->value());
-        }
-    });
-
-    connect(ui->blurSlider, &QSlider::sliderReleased, this, [this]() {
-        if (!m_isUpdatingSlider) {
-            changeFilterInt(&filterState.blur, ui->blurSlider->value());
-        }
-    });
-
-
-    connect(ui->sharpSlider, &QSlider::sliderReleased, this, [this]() {
-        if (!m_isUpdatingSlider) {
-            changeFilterInt(&filterState.sharpness, ui->sharpSlider->value());
-        }
-    });
-
-
-    ui->bwButton->setCheckable(true);
-    connect(ui->bwButton, &QPushButton::toggled, this, [this](bool checked) {
-        if (!m_isUpdatingSlider) {
-            changeFilterBool(&filterState.BWFilter, checked);
-        }
-    });
-
-
-    connect(ui->temperatureSlider, &QSlider::sliderReleased, this, [this]() {
-        if (!m_isUpdatingSlider) {
-            changeFilterInt(&filterState.temperature, ui->temperatureSlider->value());
-        }
-    });
-
-
-    connect(ui->exposureSlider, &QSlider::sliderReleased, this, [this]() {
-        if (!m_isUpdatingSlider) {
-            changeFilterInt(&filterState.exposure, ui->exposureSlider->value());
-        }
-    });
-
-
-    connect(ui->gammaSlider, &QSlider::sliderReleased, this, [this]() {
-        if (!m_isUpdatingSlider) {
-            changeFilterInt(&filterState.gamma, ui->gammaSlider->value());
-        }
-    });
-
-
-    connect(ui->tintSlider, &QSlider::sliderReleased, this, [this]() {
-        if (!m_isUpdatingSlider) {
-            changeFilterInt(&filterState.tint, ui->tintSlider->value());
-        }
-    });
-
-
-    connect(ui->vibranceSlider, &QSlider::sliderReleased, this, [this]() {
-        if (!m_isUpdatingSlider) {
-            changeFilterInt(&filterState.vibrance, ui->vibranceSlider->value());
-        }
-    });
-
-
-    connect(ui->shadowSlider, &QSlider::sliderReleased, this, [this]() {
-        if (!m_isUpdatingSlider) {
-            changeFilterInt(&filterState.shadow, ui->shadowSlider->value());
-        }
-    });
-
-
-    connect(ui->highlightSlider, &QSlider::sliderReleased, this, [this]() {
-        if (!m_isUpdatingSlider) {
-            changeFilterInt(&filterState.highlight, ui->highlightSlider->value());
-        }
-    });
-
-
-    connect(ui->claritySlider, &QSlider::sliderReleased, this, [this]() {
-        if (!m_isUpdatingSlider) {
-            changeFilterInt(&filterState.clarity, ui->claritySlider->value());
-        }
-    });
-
-
-    connect(ui->vignetteSlider, &QSlider::sliderReleased, this, [this]() {
-        if (!m_isUpdatingSlider) {
-            changeFilterInt(&filterState.vignette, ui->vignetteSlider->value());
-        }
-    });
-
-
-    connect(ui->grainSlider, &QSlider::sliderReleased, this, [this]() {
-        if (!m_isUpdatingSlider) {
-            changeFilterInt(&filterState.grain, ui->grainSlider->value());
-        }
-    });
-
-
-    connect(ui->splitToningSlider, &QSlider::sliderReleased, this, [this]() {
-        if (!m_isUpdatingSlider) {
-            changeFilterInt(&filterState.splitToning, ui->splitToningSlider->value());
-        }
-    });
-
-
-    connect(ui->fadeSlider, &QSlider::sliderReleased, this, [this]() {
-        if (!m_isUpdatingSlider) {
-            changeFilterInt(&filterState.fade, ui->fadeSlider->value());
-        }
-    });
-
-    connect(ui->graphicsView, &MyGraphicsView::cropFinished, this, &MainWindow::onCropFinished);
-
+    applyGlobalStyle();
+    createCentralCanvas();
+    createActions();
+    createTopBar();
+    createFilterDock();
+    createFilterSections();
     setupShortcuts();
 
     updateUndoRedoButtons();
+
+    resize(1400, 900);
 }
 
-MainWindow::~MainWindow()
+MainWindow::~MainWindow() = default;
+
+void MainWindow::applyGlobalStyle()
 {
-    delete ui;
-}
-
-
-void MainWindow::changeFilterInt(int* target, int newValue) {
-    int oldValue {*target};
-
-    auto command {std::make_unique<ChangeFilterIntCommand>(
-        target, oldValue, newValue,
-        [this]() {
-            this->rebuildPipeline();
+    setStyleSheet(R"(
+        QMainWindow {
+            background-color: #1e1e1e;
         }
-        )};
-    undoRedoStack.push(std::move(command));
-    updateUndoRedoButtons();
-}
-
-void MainWindow::changeFilterBool(bool* target, bool newValue) {
-    bool oldValue {*target};
-
-    auto command {std::make_unique<ChangeFilterBoolCommand>(
-        target,
-        oldValue,
-        newValue,
-        [this]() {
-            this->rebuildPipeline();
-
+        QMenuBar {
+            background-color: #2b2b2b;
+            color: #dddddd;
+            border-bottom: 1px solid #1a1a1a;
         }
-        )};
+        QMenuBar::item {
+            padding: 4px 12px;
+            background: transparent;
+        }
+        QMenuBar::item:selected {
+            background-color: #3a3a3a;
+        }
+        QMenu {
+            background-color: #2b2b2b;
+            color: #dddddd;
+            border: 1px solid #1a1a1a;
+        }
+        QMenu::item:selected {
+            background-color: #3a3a3a;
+        }
+        QToolBar {
+            background-color: #2b2b2b;
+            border: none;
+            spacing: 5px;
+            padding: 4px;
+        }
+        QToolButton {
+            background-color: transparent;
+            color: #dddddd;
+            border: none;
+            padding: 4px 6px;
+        }
+        QToolButton:hover {
+            background-color: #3a3a3a;
+            border-radius: 3px;
+        }
+        QDockWidget {
+            background-color: #252525;
+            color: #cccccc;
+        }
+        QDockWidget::title {
+            background-color: #2b2b2b;
+            padding: 6px;
+            text-align: center;
+        }
+        QLabel {
+            color: #cccccc;
+        }
 
-    undoRedoStack.push(std::move(command));
-    updateUndoRedoButtons();
+        QToolButton::menu-indicator {
+            image: none;
+            width: 0px;
+        }
+
+        QSpinBox::up-button,
+        QSpinBox::down-button {
+            width: 0px;
+            height: 0px;
+            border: none;
+        }
+        QSpinBox {
+            padding-right: 0px;
+        }
+    )");
 }
 
-void MainWindow::on_actionOpen_triggered() {
-    QString fileName { QFileDialog::getOpenFileName(
-        this,
-        "Open Image",
-        "",
-        "Images (*.png *.jpg *.jpeg *.webp *.bmp)")};
+void MainWindow::createCentralCanvas()
+{
+    m_scene = new QGraphicsScene(this);
+    m_graphicsView = new MyGraphicsView(m_scene, this);
+    m_graphicsView->setStyleSheet(R"(
+        QGraphicsView {
+            background-color: #111111;
+            border: none;
+        }
+    )");
+    setCentralWidget(m_graphicsView);
 
-    if (!fileName.isEmpty()) {
-        scene->clear();
-        ui->graphicsView->setPixmap(fileName);
-        originalImage = ui->graphicsView->getPixmap().toImage();
+    connect(m_graphicsView, &MyGraphicsView::cropFinished,
+            this, &MainWindow::onCropFinished);
 
-        filterState = FilterState{};
-        pipeline.clear();
-        undoRedoStack.clear();
+    connect(m_graphicsView, &MyGraphicsView::zoomChanged,
+            this, [this](double scale) {
+                if (!m_scaleSlider) return;
+                int value{static_cast<int>(scale * 100.0)};
+                value = std::clamp(value, m_scaleSlider->minimum(), m_scaleSlider->maximum());
 
-        m_isUpdatingSlider = true;
-        ui->bwButton->setChecked(false);
-        ui->brightnessSlider->setValue(0);
-        ui->saturationSlider->setValue(0);
-        ui->contrastSlider->setValue(0);
-        ui->blurSlider->setValue(0);
-        ui->sharpSlider->setValue(0);
-        ui->temperatureSlider->setValue(0);
-        ui->tintSlider->setValue(0);
-        ui->vibranceSlider->setValue(0);
-        ui->shadowSlider->setValue(0);
-        ui->highlightSlider->setValue(0);
-        ui->claritySlider->setValue(0);
-        ui->vignetteSlider->setValue(0);
-        ui->grainSlider->setValue(0);
-        ui->splitToningSlider->setValue(0);
-        ui->fadeSlider->setValue(0);
-        m_isUpdatingSlider = false;
+                m_isUpdatingSlider = true;
+                m_scaleSlider->setValue(value);
+                m_isUpdatingSlider = false;
+            });
+}
 
-        updateUndoRedoButtons();
+void MainWindow::createActions()
+{
+    m_openAction = new QAction(tr("Open"), this);
+    connect(m_openAction, &QAction::triggered, this, &MainWindow::openImage);
+
+    m_saveAction = new QAction(tr("Save"), this);
+    connect(m_saveAction, &QAction::triggered, this, &MainWindow::save);
+
+    m_saveAsAction = new QAction(tr("Save As..."), this);
+    connect(m_saveAsAction, &QAction::triggered, this, &MainWindow::saveAs);
+
+    m_exitAction = new QAction(tr("Exit"), this);
+    connect(m_exitAction, &QAction::triggered, this, &QMainWindow::close);
+
+    m_undoAction = new QAction(tr("Undo"), this);
+    connect(m_undoAction, &QAction::triggered, this, &MainWindow::doUndo);
+
+    m_redoAction = new QAction(tr("Redo"), this);
+    connect(m_redoAction, &QAction::triggered, this, &MainWindow::doRedo);
+
+    m_cropAction = new QAction(tr("Crop"), this);
+    connect(m_cropAction, &QAction::triggered, this, [this]() {
+        if (m_graphicsView) {
+            m_graphicsView->setCropMode(true);
+        }
+    });
+
+    m_rotateLeftAction = new QAction(tr("Rotate 90° Left"), this);
+    connect(m_rotateLeftAction, &QAction::triggered, this, &MainWindow::rotateLeft);
+
+    m_rotateRightAction = new QAction(tr("Rotate 90° Right"), this);
+    connect(m_rotateRightAction, &QAction::triggered, this, &MainWindow::rotateRight);
+
+    m_flipHAction = new QAction(tr("Flip Horizontal"), this);
+    connect(m_flipHAction, &QAction::triggered, this, &MainWindow::flipH);
+
+    m_flipVAction = new QAction(tr("Flip Vertical"), this);
+    connect(m_flipVAction, &QAction::triggered, this, &MainWindow::flipV);
+
+    m_fitToScreenAction = new QAction(tr("Fit to Screen"), this);
+
+    m_panAction = new QAction(tr("Pan"), this);
+    m_panAction->setCheckable(true);
+
+    connect(m_fitToScreenAction, &QAction::triggered, this, &MainWindow::fitToScreen);
+    connect(m_panAction, &QAction::toggled, this, [this](bool checked) {
+        m_isPanToolActive = checked;
+        updatePanMode();
+    });
+}
+
+void MainWindow::createTopBar()
+{
+    QToolBar* tb{new QToolBar(this)};
+    tb->setIconSize(QSize(18, 18));
+    tb->setMovable(false);
+    tb->setFloatable(false);
+
+    QToolButton* fileBtn{new QToolButton(tb)};
+    fileBtn->setText("File");
+    fileBtn->setPopupMode(QToolButton::InstantPopup);
+
+    QMenu* fileMenu{new QMenu(this)};
+    fileMenu->addAction(m_openAction);
+    fileMenu->addAction(m_saveAction);
+    fileMenu->addAction(m_saveAsAction);
+    fileMenu->addSeparator();
+    fileMenu->addAction(m_exitAction);
+    fileBtn->setMenu(fileMenu);
+
+    tb->addWidget(fileBtn);
+
+    QToolButton* editBtn{new QToolButton(tb)};
+    editBtn->setText("Edit");
+    editBtn->setPopupMode(QToolButton::InstantPopup);
+
+    QMenu* editMenu{new QMenu(this)};
+    editMenu->addAction(m_undoAction);
+    editMenu->addAction(m_redoAction);
+    editBtn->setMenu(editMenu);
+
+    tb->addWidget(editBtn);
+
+    QToolButton* imgBtn{new QToolButton(tb)};
+    imgBtn->setText("Image");
+    imgBtn->setPopupMode(QToolButton::InstantPopup);
+
+    QMenu* imgMenu{new QMenu(this)};
+    imgMenu->addAction(m_cropAction);
+    imgMenu->addSeparator();
+    imgMenu->addAction(m_rotateLeftAction);
+    imgMenu->addAction(m_rotateRightAction);
+    imgMenu->addAction(m_flipHAction);
+    imgMenu->addAction(m_flipVAction);
+    imgBtn->setMenu(imgMenu);
+
+    tb->addWidget(imgBtn);
+
+    QToolButton* viewBtn{new QToolButton(tb)};
+    viewBtn->setText("View");
+    viewBtn->setPopupMode(QToolButton::InstantPopup);
+
+    QMenu* viewMenu{new QMenu(this)};
+    viewMenu->addAction(m_fitToScreenAction);
+    viewMenu->addAction(m_panAction);
+    viewBtn->setMenu(viewMenu);
+
+    tb->addWidget(viewBtn);
+
+    tb->addSeparator();
+
+    tb->addAction(m_undoAction);
+    tb->addAction(m_redoAction);
+
+    tb->addSeparator();
+
+    tb->addAction(m_cropAction);
+
+    tb->addSeparator();
+
+    QLabel* zoomLabel{new QLabel("Zoom:", tb)};
+    tb->addWidget(zoomLabel);
+
+    m_scaleSlider = new QSlider(Qt::Horizontal, tb);
+
+    connect(m_scaleSlider, &QSlider::valueChanged, this, [this](int value) {
+        if (m_isUpdatingSlider) return;
+        if (!m_graphicsView) return;
+
+        double scale{static_cast<double>(value) / 100.0};
+
+        QTransform t{};
+        t.scale(scale, scale);
+        m_graphicsView->setTransform(t);
+    });
+
+    m_scaleSlider->setRange(10, 400);
+    m_scaleSlider->setValue(100);
+    m_scaleSlider->setFixedWidth(150);
+    tb->addWidget(m_scaleSlider);
+
+    tb->addAction(m_zoomInAction);
+
+    addToolBar(Qt::TopToolBarArea, tb);
+}
+
+void MainWindow::createFilterDock()
+{
+    m_filterDock = new QDockWidget(tr("Filters"), this);
+    m_filterDock->setFeatures(QDockWidget::DockWidgetMovable);
+    m_filterDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
+
+    QScrollArea* scrollArea{new QScrollArea(m_filterDock)};
+    scrollArea->setWidgetResizable(true);
+    scrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    scrollArea->setStyleSheet(R"(
+        QScrollArea {
+            background-color: #252525;
+            border: none;
+        }
+        QScrollBar:vertical {
+            background-color: #1a1a1a;
+            width: 12px;
+        }
+        QScrollBar::handle:vertical {
+            background-color: #3a3a3a;
+            border-radius: 6px;
+        }
+        QScrollBar::handle:vertical:hover {
+            background-color: #4a4a4a;
+        }
+    )");
+
+    m_filterPanel = new QWidget();
+    QVBoxLayout* panelLayout{new QVBoxLayout(m_filterPanel)};
+    panelLayout->setSpacing(0);
+    panelLayout->setContentsMargins(0, 0, 0, 0);
+    panelLayout->addStretch();
+
+    scrollArea->setWidget(m_filterPanel);
+    m_filterDock->setWidget(scrollArea);
+
+    addDockWidget(Qt::LeftDockWidgetArea, m_filterDock);
+    m_filterDock->setMinimumWidth(320);
+}
+
+void MainWindow::createFilterSections()
+{
+    auto* layout{qobject_cast<QVBoxLayout*>(m_filterPanel->layout())};
+    if (!layout) return;
+
+    QLayoutItem* stretch{layout->takeAt(layout->count() - 1)};
+    delete stretch;
+
+    auto* basicSection{new CollapsibleSection("Basic", m_filterPanel)};
+    auto* basicLayout{new QVBoxLayout()};
+    basicLayout->setSpacing(5);
+
+    m_exposureSlider = new FilterSlider("Exposure", -100, 100, 0);
+    m_contrastSlider = new FilterSlider("Contrast", -100, 100, 0);
+    m_brightnessSlider = new FilterSlider("Brightness", -100, 100, 0);
+    m_highlightSlider = new FilterSlider("Highlights", -100, 100, 0);
+    m_shadowSlider = new FilterSlider("Shadows", -100, 100, 0);
+    m_claritySlider = new FilterSlider("Clarity", -100, 100, 0);
+
+    basicLayout->addWidget(m_exposureSlider);
+    basicLayout->addWidget(m_contrastSlider);
+    basicLayout->addWidget(m_brightnessSlider);
+    basicLayout->addWidget(m_highlightSlider);
+    basicLayout->addWidget(m_shadowSlider);
+    basicLayout->addWidget(m_claritySlider);
+
+    basicSection->setContentLayout(basicLayout);
+    layout->addWidget(basicSection);
+    m_sections.append(basicSection);
+
+    auto* colorSection{new CollapsibleSection("Color", m_filterPanel)};
+    auto* colorLayout{new QVBoxLayout()};
+    colorLayout->setSpacing(5);
+
+    m_temperatureSlider = new FilterSlider("Temperature", -100, 100, 0);
+    m_tintSlider        = new FilterSlider("Tint", -100, 100, 0);
+    m_saturationSlider  = new FilterSlider("Saturation", -100, 100, 0);
+    m_vibranceSlider    = new FilterSlider("Vibrance", -100, 100, 0);
+
+    colorLayout->addWidget(m_temperatureSlider);
+    colorLayout->addWidget(m_tintSlider);
+    colorLayout->addWidget(m_saturationSlider);
+    colorLayout->addWidget(m_vibranceSlider);
+
+    colorSection->setContentLayout(colorLayout);
+    layout->addWidget(colorSection);
+    m_sections.append(colorSection);
+
+    auto* effectsSection{new CollapsibleSection("Effects", m_filterPanel)};
+    auto* effectsLayout{new QVBoxLayout()};
+    effectsLayout->setSpacing(5);
+
+    m_splitToningSlider = new FilterSlider("Split Toning", 0, 100, 0);
+    m_vignetteSlider    = new FilterSlider("Vignette", 0, 100, 0);
+    m_grainSlider       = new FilterSlider("Grain", 0, 100, 0);
+    m_fadeSlider        = new FilterSlider("Fade", 0, 100, 0);
+
+    effectsLayout->addWidget(m_splitToningSlider);
+    effectsLayout->addWidget(m_vignetteSlider);
+    effectsLayout->addWidget(m_grainSlider);
+    effectsLayout->addWidget(m_fadeSlider);
+
+    effectsSection->setContentLayout(effectsLayout);
+    layout->addWidget(effectsSection);
+    m_sections.append(effectsSection);
+
+    auto* detailSection{new CollapsibleSection("Detail", m_filterPanel)};
+    auto* detailLayout{new QVBoxLayout()};
+    detailLayout->setSpacing(5);
+
+    m_sharpenSlider = new FilterSlider("Sharpen", 0, 100, 0);
+    m_blurSlider    = new FilterSlider("Blur", 0, 100, 0);
+
+    detailLayout->addWidget(m_sharpenSlider);
+    detailLayout->addWidget(m_blurSlider);
+
+    detailSection->setContentLayout(detailLayout);
+    layout->addWidget(detailSection);
+    m_sections.append(detailSection);
+
+    auto* transformSection{new CollapsibleSection("Transform", m_filterPanel)};
+    auto* transformLayout{new QVBoxLayout()};
+    transformLayout->setSpacing(5);
+    transformLayout->setContentsMargins(10, 5, 10, 5);
+
+    QPushButton* rotateRBtn{new QPushButton("Rotate 90° Right")};
+    rotateRBtn->setStyleSheet("QPushButton { padding: 8px; background-color: #3a3a3a; border-radius: 3px; } QPushButton:hover { background-color: #4a4a4a; }");
+    transformLayout->addWidget(rotateRBtn);
+
+    QPushButton* rotateLBtn{new QPushButton("Rotate 90° Left")};
+    rotateLBtn->setStyleSheet("QPushButton { padding: 8px; background-color: #3a3a3a; border-radius: 3px; } QPushButton:hover { background-color: #4a4a4a; }");
+    transformLayout->addWidget(rotateLBtn);
+
+    QPushButton* flipHBtn{new QPushButton("Flip Horizontal")};
+    flipHBtn->setStyleSheet("QPushButton { padding: 8px; background-color: #3a3a3a; border-radius: 3px; } QPushButton:hover { background-color: #4a4a4a; }");
+    transformLayout->addWidget(flipHBtn);
+
+    QPushButton* flipVBtn{new QPushButton("Flip Vertical")};
+    flipVBtn->setStyleSheet("QPushButton { padding: 8px; background-color: #3a3a3a; border-radius: 3px; } QPushButton:hover { background-color: #4a4a4a; }");
+    transformLayout->addWidget(flipVBtn);
+
+    m_bwCheckbox = new QCheckBox("Black & White");
+    m_bwCheckbox->setStyleSheet("QCheckBox { color: #aaaaaa; padding: 5px; }");
+    transformLayout->addWidget(m_bwCheckbox);
+
+    m_gammaSlider = new FilterSlider("Gamma", -100, 100, 0);
+    transformLayout->addWidget(m_gammaSlider);
+
+    transformSection->setContentLayout(transformLayout);
+    layout->addWidget(transformSection);
+    m_sections.append(transformSection);
+
+    layout->addStretch();
+
+    for (CollapsibleSection* section : m_sections) {
+        connect(section, &CollapsibleSection::toggled, this, [this, section](bool expanded) {
+            if (!expanded) return;
+            for (CollapsibleSection* other : m_sections) {
+                if (other != section && other->isExpanded()) {
+                    other->toggle();
+                }
+            }
+        });
+    }
+
+    auto connectSlider = [this](FilterSlider* slider, int* targetField) {
+        if (!slider) return;
+        connect(slider, &FilterSlider::sliderReleased, this, [this, targetField](int value) {
+            if (m_isUpdatingSlider) return;
+            changeFilterInt(targetField, value);
+        });
+    };
+
+    connectSlider(m_exposureSlider,   &filterState.exposure);
+    connectSlider(m_contrastSlider,   &filterState.contrast);
+    connectSlider(m_brightnessSlider, &filterState.brightness);
+    connectSlider(m_highlightSlider,  &filterState.highlight);
+    connectSlider(m_shadowSlider,     &filterState.shadow);
+    connectSlider(m_claritySlider,    &filterState.clarity);
+
+    connectSlider(m_temperatureSlider, &filterState.temperature);
+    connectSlider(m_tintSlider,        &filterState.tint);
+    connectSlider(m_saturationSlider,  &filterState.saturation);
+    connectSlider(m_vibranceSlider,    &filterState.vibrance);
+
+    connectSlider(m_splitToningSlider, &filterState.splitToning);
+    connectSlider(m_vignetteSlider,    &filterState.vignette);
+    connectSlider(m_grainSlider,       &filterState.grain);
+    connectSlider(m_fadeSlider,        &filterState.fade);
+
+    connectSlider(m_sharpenSlider, &filterState.sharpness);
+    connectSlider(m_blurSlider,    &filterState.blur);
+    connectSlider(m_gammaSlider,   &filterState.gamma);
+
+    connect(m_bwCheckbox, &QCheckBox::toggled, this, [this](bool checked) {
+        if (m_isUpdatingSlider) return;
+        changeFilterBool(&filterState.BWFilter, checked);
+    });
+
+    connect(rotateRBtn, &QPushButton::clicked, this, &MainWindow::rotateRight);
+    connect(rotateLBtn, &QPushButton::clicked, this, &MainWindow::rotateLeft);
+    connect(flipHBtn,   &QPushButton::clicked, this, &MainWindow::flipH);
+    connect(flipVBtn,   &QPushButton::clicked, this, &MainWindow::flipV);
+}
+
+void MainWindow::setupShortcuts()
+{
+    auto* zoomInShortcut{new QShortcut(QKeySequence("+"), this)};
+    auto* zoomInShortcut2{new QShortcut(QKeySequence("="), this)};
+    connect(zoomInShortcut, &QShortcut::activated, this, [this]() {
+        if (!m_scaleSlider) return;
+        m_scaleSlider->setValue(m_scaleSlider->value() + 5);
+    });
+    connect(zoomInShortcut2, &QShortcut::activated, this, [this]() {
+        if (!m_scaleSlider) return;
+        m_scaleSlider->setValue(m_scaleSlider->value() + 5);
+    });
+
+    auto* zoomOutShortcut{new QShortcut(QKeySequence("-"), this)};
+    connect(zoomOutShortcut, &QShortcut::activated, this, [this]() {
+        if (!m_scaleSlider) return;
+        m_scaleSlider->setValue(m_scaleSlider->value() - 5);
+    });
+
+    auto* panToolShortcut{new QShortcut(QKeySequence("H"), this)};
+    connect(panToolShortcut, &QShortcut::activated, this, [this]() {
+        m_isPanToolActive = !m_isPanToolActive;
+        updatePanMode();
+    });
+
+    auto* cancelPanShortcut{new QShortcut(QKeySequence("Escape"), this)};
+    connect(cancelPanShortcut, &QShortcut::activated, this, [this]() {
+        m_isPanToolActive = false;
+        updatePanMode();
+    });
+
+    m_openAction->setShortcut(QKeySequence("Ctrl+O"));
+    m_exitAction->setShortcut(QKeySequence("Ctrl+Q"));
+    m_undoAction->setShortcut(QKeySequence("Ctrl+Z"));
+    m_redoAction->setShortcuts({ QKeySequence("Ctrl+Y"), QKeySequence("Ctrl+Shift+Z") });
+    m_cropAction->setShortcut(QKeySequence("C"));
+    m_rotateLeftAction->setShortcut(QKeySequence("Ctrl+["));
+    m_rotateRightAction->setShortcut(QKeySequence("Ctrl+]"));
+    m_fitToScreenAction->setShortcut(QKeySequence("Ctrl+0"));
+    m_flipHAction->setShortcut(QKeySequence("Ctrl+H"));
+    m_flipVAction->setShortcut(QKeySequence("Ctrl+V"));
+    m_fitToScreenAction->setShortcut(QKeySequence("Ctrl+0"));
+    m_saveAction->setShortcut(QKeySequence("Ctrl+S"));
+    m_saveAsAction->setShortcut(QKeySequence("Ctrl+Shift+S"));
+}
+
+void MainWindow::updatePanMode()
+{
+    if (!m_graphicsView) return;
+
+    bool pan{m_isPanToolActive || m_isSpacePanActive};
+    m_graphicsView->setPanMode(pan);
+
+    if (pan) {
+        m_graphicsView->setCursor(Qt::OpenHandCursor);
+    } else {
+        m_graphicsView->unsetCursor();
     }
 }
 
-void MainWindow::on_actionCrop_triggered() {
-    ui->graphicsView->setCropMode(true);
+void MainWindow::keyPressEvent(QKeyEvent* event)
+{
+    if (event->key() == Qt::Key_Space && !event->isAutoRepeat()) {
+        m_isSpacePanActive = true;
+        updatePanMode();
+    }
+    QMainWindow::keyPressEvent(event);
 }
 
-void MainWindow::onCropFinished(const QRect& rect) {
-    auto cmd {std::make_unique<CropCommand>(
+void MainWindow::keyReleaseEvent(QKeyEvent* event)
+{
+    if (event->key() == Qt::Key_Space && !event->isAutoRepeat()) {
+        m_isSpacePanActive = false;
+        updatePanMode();
+    }
+    QMainWindow::keyReleaseEvent(event);
+}
+
+void MainWindow::openImage()
+{
+    const QString fileName{QFileDialog::getOpenFileName(
+        this,
+        tr("Open Image"),
+        QString(),
+        tr("Images (*.png *.jpg *.jpeg *.webp *.bmp)")
+        )};
+
+    if (fileName.isEmpty()) return;
+
+    m_currentFilePath = fileName;
+
+    QImage img(fileName);
+    if (img.isNull()) return;
+
+    originalImage = img;
+    if (m_graphicsView) {
+        m_graphicsView->setPixmap(QPixmap::fromImage(originalImage));
+    }
+
+    filterState = FilterState{};
+    pipeline.clear();
+    undoRedoStack.clear();
+
+    m_isUpdatingSlider = true;
+    if (m_exposureSlider)   m_exposureSlider->setValue(0);
+    if (m_contrastSlider)   m_contrastSlider->setValue(0);
+    if (m_brightnessSlider) m_brightnessSlider->setValue(0);
+    if (m_highlightSlider)  m_highlightSlider->setValue(0);
+    if (m_shadowSlider)     m_shadowSlider->setValue(0);
+    if (m_claritySlider)    m_claritySlider->setValue(0);
+
+    if (m_temperatureSlider) m_temperatureSlider->setValue(0);
+    if (m_tintSlider)        m_tintSlider->setValue(0);
+    if (m_saturationSlider)  m_saturationSlider->setValue(0);
+    if (m_vibranceSlider)    m_vibranceSlider->setValue(0);
+
+    if (m_splitToningSlider) m_splitToningSlider->setValue(0);
+    if (m_vignetteSlider)    m_vignetteSlider->setValue(0);
+    if (m_grainSlider)       m_grainSlider->setValue(0);
+    if (m_fadeSlider)        m_fadeSlider->setValue(0);
+
+    if (m_sharpenSlider) m_sharpenSlider->setValue(0);
+    if (m_blurSlider)    m_blurSlider->setValue(0);
+    if (m_gammaSlider)   m_gammaSlider->setValue(0);
+
+    if (m_bwCheckbox) m_bwCheckbox->setChecked(false);
+
+    if (m_scaleSlider) m_scaleSlider->setValue(100);
+    m_isUpdatingSlider = false;
+
+    fitToScreen();
+
+    rebuildPipeline();
+    updateUndoRedoButtons();
+}
+
+void MainWindow::onCropFinished(const QRect& rect)
+{
+    if (originalImage.isNull()) return;
+
+    auto cmd{std::make_unique<CropCommand>(
         &originalImage,
         rect,
         [this]() {
             this->updateImage();
         }
-    )};
+        )};
 
     undoRedoStack.push(std::move(cmd));
     updateUndoRedoButtons();
 }
 
-void MainWindow::on_actionResetZoom_triggered() {
-    ui->scaleSlider->setValue(100);
+void MainWindow::fitToScreen()
+{
+    if (originalImage.isNull() || !m_graphicsView || !m_scaleSlider) return;
+
+    const QSize imgSize{originalImage.size()};
+    const QSize viewSize{m_graphicsView->viewport()->size()};
+
+    if (imgSize.isEmpty() || viewSize.isEmpty()) return;
+
+    const double scaleX{static_cast<double>(viewSize.width())  / imgSize.width()};
+    const double scaleY{static_cast<double>(viewSize.height()) / imgSize.height()};
+    const double scale{std::min(scaleX, scaleY)};
+
+    int sliderValue{static_cast<int>(scale * 100.0)};
+    sliderValue = std::clamp(sliderValue, m_scaleSlider->minimum(), m_scaleSlider->maximum());
+
+    m_isUpdatingSlider = true;
+    m_scaleSlider->setValue(sliderValue);
+    m_isUpdatingSlider = false;
+
+    QTransform t{};
+    t.scale(scale, scale);
+    m_graphicsView->setTransform(t);
 }
 
-void MainWindow::on_actionRotateLeft_triggered() {
+void MainWindow::rotateLeft()
+{
     changeFilterInt(&filterState.rotateAngle, filterState.rotateAngle - 90);
 }
 
-void MainWindow::on_actionRotateRight_triggered() {
+void MainWindow::rotateRight()
+{
     changeFilterInt(&filterState.rotateAngle, filterState.rotateAngle + 90);
 }
 
-void MainWindow::on_actionFlipHorizontally_triggered() {
+void MainWindow::flipH()
+{
     changeFilterBool(&filterState.flipH, !filterState.flipH);
 }
 
-void MainWindow::on_actionFlipVertically_triggered() {
+void MainWindow::flipV()
+{
     changeFilterBool(&filterState.flipV, !filterState.flipV);
 }
 
-void MainWindow::rebuildPipeline() {
+void MainWindow::changeFilterInt(int* target, int newValue)
+{
+    if (!target) return;
+    int oldValue{*target};
+
+    auto command{std::make_unique<ChangeFilterIntCommand>(
+        target,
+        oldValue,
+        newValue,
+        [this]() {
+            this->rebuildPipeline();
+        }
+        )};
+
+    undoRedoStack.push(std::move(command));
+    updateUndoRedoButtons();
+}
+
+void MainWindow::changeFilterBool(bool* target, bool newValue)
+{
+    if (!target) return;
+    bool oldValue{*target};
+
+    auto command{std::make_unique<ChangeFilterBoolCommand>(
+        target,
+        oldValue,
+        newValue,
+        [this]() {
+            this->rebuildPipeline();
+        }
+        )};
+
+    undoRedoStack.push(std::move(command));
+    updateUndoRedoButtons();
+}
+
+void MainWindow::rebuildPipeline()
+{
     pipeline.clear();
 
     pipeline.addFilter(std::make_unique<RotateFilter>(filterState.rotateAngle));
     pipeline.addFilter(std::make_unique<FlipFilter>(FlipFilter::Direction::Horizontal, filterState.flipH));
-    pipeline.addFilter(std::make_unique<FlipFilter>(FlipFilter::Direction::Vertical, filterState.flipV));
+    pipeline.addFilter(std::make_unique<FlipFilter>(FlipFilter::Direction::Vertical,   filterState.flipV));
 
     pipeline.addFilter(std::make_unique<BlurFilter>(filterState.blur));
     pipeline.addFilter(std::make_unique<SharpenFilter>(filterState.sharpness));
@@ -326,174 +777,121 @@ void MainWindow::rebuildPipeline() {
     updateImage();
 }
 
-void MainWindow::on_actionUndo_triggered() {
+void MainWindow::updateImage()
+{
+    if (originalImage.isNull() || !m_graphicsView) return;
+
+    QImage result {pipeline.process(originalImage)};
+    m_graphicsView->setPixmap(QPixmap::fromImage(result));
+}
+
+void MainWindow::doUndo()
+{
+    if (!undoRedoStack.canUndo()) return;
+
     m_isUpdatingSlider = true;
     undoRedoStack.undo();
 
-    ui->brightnessSlider->setValue(filterState.brightness);
-    ui->saturationSlider->setValue(filterState.saturation);
-    ui->contrastSlider->setValue(filterState.contrast);
-    ui->blurSlider->setValue(filterState.blur);
-    ui->sharpSlider->setValue(filterState.sharpness);
-    ui->temperatureSlider->setValue(filterState.temperature);
-    ui->exposureSlider->setValue(filterState.exposure);
-    ui->gammaSlider->setValue(filterState.gamma);
-    ui->tintSlider->setValue(filterState.tint);
-    ui->vibranceSlider->setValue(filterState.vibrance);
-    ui->shadowSlider->setValue(filterState.shadow);
-    ui->highlightSlider->setValue(filterState.highlight);
-    ui->claritySlider->setValue(filterState.clarity);
-    ui->vignetteSlider->setValue(filterState.vignette);
-    ui->grainSlider->setValue(filterState.grain);
-    ui->splitToningSlider->setValue(filterState.splitToning);
-    ui->fadeSlider->setValue(filterState.fade);
-    ui->bwButton->setChecked(filterState.BWFilter);
+    if (m_exposureSlider)   m_exposureSlider->setValue(filterState.exposure);
+    if (m_contrastSlider)   m_contrastSlider->setValue(filterState.contrast);
+    if (m_brightnessSlider) m_brightnessSlider->setValue(filterState.brightness);
+    if (m_highlightSlider)  m_highlightSlider->setValue(filterState.highlight);
+    if (m_shadowSlider)     m_shadowSlider->setValue(filterState.shadow);
+    if (m_claritySlider)    m_claritySlider->setValue(filterState.clarity);
+
+    if (m_temperatureSlider) m_temperatureSlider->setValue(filterState.temperature);
+    if (m_tintSlider)        m_tintSlider->setValue(filterState.tint);
+    if (m_saturationSlider)  m_saturationSlider->setValue(filterState.saturation);
+    if (m_vibranceSlider)    m_vibranceSlider->setValue(filterState.vibrance);
+
+    if (m_splitToningSlider) m_splitToningSlider->setValue(filterState.splitToning);
+    if (m_vignetteSlider)    m_vignetteSlider->setValue(filterState.vignette);
+    if (m_grainSlider)       m_grainSlider->setValue(filterState.grain);
+    if (m_fadeSlider)        m_fadeSlider->setValue(filterState.fade);
+
+    if (m_sharpenSlider) m_sharpenSlider->setValue(filterState.sharpness);
+    if (m_blurSlider)    m_blurSlider->setValue(filterState.blur);
+    if (m_gammaSlider)   m_gammaSlider->setValue(filterState.gamma);
+
+    if (m_bwCheckbox) m_bwCheckbox->setChecked(filterState.BWFilter);
 
     m_isUpdatingSlider = false;
     updateUndoRedoButtons();
 }
 
-void MainWindow::on_actionRedo_triggered() {
+void MainWindow::doRedo()
+{
+    if (!undoRedoStack.canRedo()) return;
+
     m_isUpdatingSlider = true;
     undoRedoStack.redo();
 
-    ui->brightnessSlider->setValue(filterState.brightness);
-    ui->saturationSlider->setValue(filterState.saturation);
-    ui->contrastSlider->setValue(filterState.contrast);
-    ui->blurSlider->setValue(filterState.blur);
-    ui->sharpSlider->setValue(filterState.sharpness);
-    ui->temperatureSlider->setValue(filterState.temperature);
-    ui->exposureSlider->setValue(filterState.exposure);
-    ui->gammaSlider->setValue(filterState.gamma);
-    ui->tintSlider->setValue(filterState.tint);
-    ui->vibranceSlider->setValue(filterState.vibrance);
-    ui->shadowSlider->setValue(filterState.shadow);
-    ui->highlightSlider->setValue(filterState.highlight);
-    ui->claritySlider->setValue(filterState.clarity);
-    ui->vignetteSlider->setValue(filterState.vignette);
-    ui->grainSlider->setValue(filterState.grain);
-    ui->splitToningSlider->setValue(filterState.splitToning);
-    ui->fadeSlider->setValue(filterState.fade);
-    ui->bwButton->setChecked(filterState.BWFilter);
+    if (m_exposureSlider)   m_exposureSlider->setValue(filterState.exposure);
+    if (m_contrastSlider)   m_contrastSlider->setValue(filterState.contrast);
+    if (m_brightnessSlider) m_brightnessSlider->setValue(filterState.brightness);
+    if (m_highlightSlider)  m_highlightSlider->setValue(filterState.highlight);
+    if (m_shadowSlider)     m_shadowSlider->setValue(filterState.shadow);
+    if (m_claritySlider)    m_claritySlider->setValue(filterState.clarity);
+
+    if (m_temperatureSlider) m_temperatureSlider->setValue(filterState.temperature);
+    if (m_tintSlider)        m_tintSlider->setValue(filterState.tint);
+    if (m_saturationSlider)  m_saturationSlider->setValue(filterState.saturation);
+    if (m_vibranceSlider)    m_vibranceSlider->setValue(filterState.vibrance);
+
+    if (m_splitToningSlider) m_splitToningSlider->setValue(filterState.splitToning);
+    if (m_vignetteSlider)    m_vignetteSlider->setValue(filterState.vignette);
+    if (m_grainSlider)       m_grainSlider->setValue(filterState.grain);
+    if (m_fadeSlider)        m_fadeSlider->setValue(filterState.fade);
+
+    if (m_sharpenSlider) m_sharpenSlider->setValue(filterState.sharpness);
+    if (m_blurSlider)    m_blurSlider->setValue(filterState.blur);
+    if (m_gammaSlider)   m_gammaSlider->setValue(filterState.gamma);
+
+    if (m_bwCheckbox) m_bwCheckbox->setChecked(filterState.BWFilter);
 
     m_isUpdatingSlider = false;
     updateUndoRedoButtons();
 }
 
-void MainWindow::updateUndoRedoButtons() {
-    ui->actionUndo->setEnabled(undoRedoStack.canUndo());
-    ui->actionRedo->setEnabled(undoRedoStack.canRedo());
-}
-
-void MainWindow::updateImage() {
-    if (ui->graphicsView->getPixmap().isNull()) return;
-
-    QImage result {pipeline.process(originalImage)};
-    ui->graphicsView->setPixmap(QPixmap::fromImage(result));
-}
-
-
-void MainWindow::setupShortcuts() {
-
-    ui->actionOpen->setShortcut(QKeySequence("Ctrl+O"));
-
-    ui->actionUndo->setShortcut(QKeySequence("Ctrl+Z"));
-    ui->actionRedo->setShortcuts({QKeySequence("Ctrl+Y"), QKeySequence("Ctrl+Shift+Z")});
-    ui->actionCrop->setShortcut(QKeySequence("C"));
-    ui->actionRotateLeft->setShortcut(QKeySequence("Ctrl+["));
-    ui->actionRotateRight->setShortcut(QKeySequence("Ctrl+]"));
-    ui->actionFlipHorizontally->setShortcut(QKeySequence("Ctrl+H"));
-    ui->actionFlipVertically->setShortcut(QKeySequence("Ctrl+V"));
-    ui->actionResetZoom->setShortcut(QKeySequence("Ctrl+1"));
-    ui->actionFitToScreen->setShortcut(QKeySequence("Ctrl+0"));
-
-
-    QShortcut* zoomIn {new QShortcut(QKeySequence("+"), this)};
-    QShortcut* zoomIn2 {new QShortcut(QKeySequence("="), this)};
-
-    connect(zoomIn, &QShortcut::activated, this, [this]() {
-        ui->scaleSlider->setValue(ui->scaleSlider->value() + 5);
-    });
-
-    connect(zoomIn2, &QShortcut::activated, this, [this]() {
-        ui->scaleSlider->setValue(ui->scaleSlider->value() + 5);
-    });
-
-
-
-    QShortcut* zoomOut {new QShortcut(QKeySequence("-"), this)};
-    connect(zoomOut, &QShortcut::activated, this, [this]() {
-        ui->scaleSlider->setValue(ui->scaleSlider->value() - 5);
-    });
-
-    QShortcut* panTool {new QShortcut(QKeySequence("H"), this)};
-    connect(panTool, &QShortcut::activated, this, [this]() {
-        m_isPanToolActive = !m_isPanToolActive;
-        updatePanMode();
-    });
-
-    QShortcut* cancelPanTool {new QShortcut(QKeySequence("Escape"), this)};
-    connect(cancelPanTool, &QShortcut::activated, this, [this]() {
-        m_isPanToolActive = false;
-        updatePanMode();
-    });
-}
-
-
-void MainWindow::on_actionFitToScreen_triggered()
+void MainWindow::updateUndoRedoButtons()
 {
-    if (originalImage.isNull()) return;
-
-    QSize imgSize {originalImage.size()};
-    QSize viewSize {ui->graphicsView->viewport()->size()};
-
-    double scaleX {static_cast<double>(viewSize.width()) / static_cast<double>(imgSize.width())};
-    double scaleY {static_cast<double>(viewSize.height()) / static_cast<double>(imgSize.height())};
-
-    double scale {std::min(scaleX, scaleY)};
-
-    int sliderValue {static_cast<int>(scale * 100.0)};
-
-    m_isUpdatingSlider = true;
-    ui->scaleSlider->setValue(sliderValue);
-    m_isUpdatingSlider = false;
+    if (m_undoAction) m_undoAction->setEnabled(undoRedoStack.canUndo());
+    if (m_redoAction) m_redoAction->setEnabled(undoRedoStack.canRedo());
 }
 
-void MainWindow::on_actionPan_triggered() {
-    m_isPanToolActive = !m_isPanToolActive;
-    updatePanMode();
+void MainWindow::save() {
+    if (m_currentFilePath.isEmpty()) {
+        saveAs();
+        return;
+    }
+
+    QPixmap pixmap {m_graphicsView->getPixmap()};
+
+    if (pixmap.isNull()) {
+        QMessageBox::warning(this, "Error", "No image to save");
+    }
+
+    if (!pixmap.save(m_currentFilePath)) {
+        QMessageBox::warning(this, "Error", "Failed to save image");
+    }
 }
 
+void MainWindow::saveAs() {
 
-void MainWindow::updatePanMode() {
-    ui->graphicsView->setPanMode(m_isPanToolActive || m_isSpacePanActive);
+    QString fileName {QFileDialog::getSaveFileName(
+        this,
+        "Save Image As",
+        "",
+        "PNG (*.png);;JPEG (*.jpg *.jpeg);;BMP (*.bmp)"
+    )};
 
-    if (ui->graphicsView->getPanMode()) {
-        ui->graphicsView->setCursor(Qt::OpenHandCursor);
+    if (fileName.isEmpty()) return;
+
+
+    QPixmap pixmap {m_graphicsView->getPixmap()};
+
+    if (!pixmap.save(fileName)) {
+        QMessageBox::warning(this, "Error", "Failed to save file");
+        return;
     }
-
-    else {
-        ui->graphicsView->unsetCursor();
-    }
-
-
-}
-
-
-void MainWindow::keyPressEvent(QKeyEvent *event) {
-    if (event->key() == Qt::Key_Space) {
-        m_isSpacePanActive = true;
-        updatePanMode();
-    }
-
-    QMainWindow::keyPressEvent(event);
-}
-
-void MainWindow::keyReleaseEvent(QKeyEvent *event) {
-    if (event->key() == Qt::Key_Space) {
-        m_isSpacePanActive = false;
-        updatePanMode();
-    }
-
-    QMainWindow::keyReleaseEvent(event);
 }

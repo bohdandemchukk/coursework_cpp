@@ -15,7 +15,10 @@ class MyGraphicsView: public QGraphicsView {
     Q_OBJECT
 
 public:
-    explicit MyGraphicsView(QWidget *parent = nullptr);
+    explicit MyGraphicsView(QGraphicsScene* scene, QWidget* parent = nullptr);
+
+
+
 
     QPixmap getPixmap() const {
         return m_pixmap;
@@ -64,13 +67,13 @@ protected:
 
 private:
 
+    QPixmap m_pixmap{};
+
     bool m_cropMode {false};
     QPoint m_cropStart {};
 
     bool m_panMode {false};
     QPoint m_lastPanPoint{};
-
-    QPixmap m_pixmap{};
     QRubberBand *rubberBand{nullptr};
 
 

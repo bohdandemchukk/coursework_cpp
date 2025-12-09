@@ -1,14 +1,10 @@
 #include "MyGraphicsView.h"
-#include "MainWindow.h"
 #include <QRectF>
 #include <QPointF>
 #include <QScrollBar>
 
-QImage MainWindow::originalImage;
-
-MyGraphicsView::MyGraphicsView(QWidget *parent)
-    : QGraphicsView(parent)
-    , rubberBand {new QRubberBand(QRubberBand::Rectangle, this)}
+MyGraphicsView::MyGraphicsView(QGraphicsScene* scene, QWidget* parent)
+    : QGraphicsView(scene, parent),  rubberBand {new QRubberBand(QRubberBand::Rectangle, this)}
 {
 }
 

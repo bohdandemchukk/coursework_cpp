@@ -15,16 +15,21 @@ find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
 set(PROJECT_SOURCES
         main.cpp
         MainWindow.cpp
-        MainWindow.h
-        MainWindow.ui
+
+
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     qt_add_executable(ImageEditor
         MANUAL_FINALIZATION
         ${PROJECT_SOURCES}
+        MainWindow.h
         MyGraphicsView.h
         MyGraphicsView.cpp
+        CollapsibleSection.cpp
+            CollapsibleSection.h
+            FilterSlider.cpp
+            FilterSlider.h
     filters/RotateFilter.h filters/RotateFilter.cpp
     filters/FlipFilter.h filters/FlipFilter.cpp
     filters/BWFilter.h filters/BWFilter.cpp
@@ -55,6 +60,8 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     changefilterintcommand.h changefilterintcommand.cpp
     changefilterboolcommand.h changefilterboolcommand.cpp
     cropcommand.h cropcommand.cpp
+    collapsiblesection.h collapsiblesection.cpp
+    filterslider.h filterslider.cpp
 
 
 
