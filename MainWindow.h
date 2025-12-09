@@ -1,21 +1,49 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
+
 #include <QMainWindow>
 #include <QGraphicsScene>
-#include <QWheelEvent>
+#include <QPointer>
+#include <QMap>
+#include <QToolBar>
+#include <QDockWidget>
+#include <QSlider>
+#include <QLabel>
+#include <QPushButton>
+#include <QPropertyAnimation>
+#include <QVBoxLayout>
+#include <QMenu>
+#include <QMenuBar>
+#include <QStatusBar>
 #include "MyGraphicsView.h"
-#include <QImage>
 #include "filterpipeline.h"
 #include "undoredostack.h"
 #include "changefilterintcommand.h"
 #include "changefilterboolcommand.h"
 
-QT_BEGIN_NAMESPACE
+class AccordionSection : public QWidget
+{
+    Q_OBJECT
+public:
+    explicit AccordionSection(const QString &title, QWidget *parent = nullptr);
 
-namespace Ui {
-class MainWindow;
-}
-QT_END_NAMESPACE
+    QVBoxLayout *contentLayout() const { return m_contentLayout; }
+    void toggle();
+    void setExpanded(bool expanded);
+    bool isExpanded() const { return m_expanded; }
+
+signals:
+    void expanded(AccordionSection *section);
+
+private:
+    void animateContent(int start, int end);
+
+    QPushButton *m_headerButton { nullptr };
+    QWidget *m_content { nullptr };
+    QVBoxLayout *m_contentLayout { nullptr };
+    QPropertyAnimation *m_animation { nullptr };
+    bool m_expanded { false };
+};
 
 class MainWindow : public QMainWindow
 {
@@ -32,10 +60,60 @@ protected:
     void keyReleaseEvent(QKeyEvent* event) override;
 
 private:
-    Ui::MainWindow *ui;
-    QGraphicsScene *scene;
+    // UI helpers
+    void setupUi();
+    void createMenus();
+    void createToolbar();
+    QWidget *createCentralView();
+    void createFilterDock();
+    QSlider *addSlider(AccordionSection *section, const QString &name, int min, int max, int defaultValue);
+    void applyDarkPalette();
+
+    // Filter helpers
+    void changeFilterInt(int* target, int newValue);
+    void changeFilterBool(bool* target, bool newValue);
+    void rebuildPipeline();
+    void updateUndoRedoButtons();
+    void updateImage();
+    void resetFilterControls();
+    void updateZoomDisplay(double scale);
 
     void setupShortcuts();
+    void updatePanMode();
+
+private slots:
+    void openImage();
+    void saveImage();
+    void onCropFinished(const QRect& rect);
+    void rotateLeft();
+    void rotateRight();
+    void flipHorizontally();
+    void flipVertically();
+    void fitToScreen();
+    void togglePanTool();
+    void undo();
+    void redo();
+
+private:
+    QGraphicsScene *scene { nullptr };
+    MyGraphicsView *graphicsView { nullptr };
+    QDockWidget *filterDock { nullptr };
+
+    QAction *openAction { nullptr };
+    QAction *saveAction { nullptr };
+    QAction *undoAction { nullptr };
+    QAction *redoAction { nullptr };
+    QAction *cropAction { nullptr };
+    QAction *rotateLeftAction { nullptr };
+    QAction *rotateRightAction { nullptr };
+    QAction *flipHAction { nullptr };
+    QAction *flipVAction { nullptr };
+    QAction *fitToScreenAction { nullptr };
+    QAction *panToolAction { nullptr };
+    QAction *brushAction { nullptr };
+    QAction *eraserAction { nullptr };
+
+    QLabel *zoomLabel { nullptr };
 
     struct FilterState {
         int brightness  { 0 };
@@ -66,35 +144,11 @@ private:
     UndoRedoStack undoRedoStack{};
 
     bool m_isUpdatingSlider {false};
-
     bool m_isPanToolActive {false};
     bool m_isSpacePanActive {false};
 
-
-    void changeFilterInt(int* target, int newValue);
-
-
-    void changeFilterBool(bool* target, bool newValue);
-
-
-    void updateUndoRedoButtons();
-
-private slots:
-    void on_actionOpen_triggered();
-    void on_actionCrop_triggered();
-    void on_actionRotateLeft_triggered();
-    void on_actionRotateRight_triggered();
-    void on_actionFlipHorizontally_triggered();
-    void on_actionFlipVertically_triggered();
-    void on_actionResetZoom_triggered();
-    void updateImage();
-    void rebuildPipeline();
-    void on_actionUndo_triggered();
-    void on_actionRedo_triggered();
-    void onCropFinished(const QRect& rect);
-    void on_actionFitToScreen_triggered();
-    void on_actionPan_triggered();
-    void updatePanMode();
+    QMap<QString, QSlider*> m_sliders;
+    QPushButton *bwButton { nullptr };
 };
 
 #endif // MAINWINDOW_H
