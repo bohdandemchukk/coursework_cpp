@@ -60,6 +60,10 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     changefilterintcommand.h changefilterintcommand.cpp
     changefilterboolcommand.h changefilterboolcommand.cpp
     cropcommand.h cropcommand.cpp
+    tool.h tool.cpp
+    brushtool.h brushtool.cpp
+    erasertool.h erasertool.cpp
+    strokecommand.h strokecommand.cpp
     collapsiblesection.h collapsiblesection.cpp
     filterslider.h filterslider.cpp
 

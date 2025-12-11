@@ -9,7 +9,12 @@
 #include <QPixmap>
 #include <QRect>
 #include <QGraphicsPixmapItem>
+#include <QtGlobal>
+#include <memory>
+#include "command.h"
 
+
+class Tool;
 
 class MyGraphicsView: public QGraphicsView {
     Q_OBJECT
@@ -53,11 +58,14 @@ public:
         return m_panMode;
     }
 
+    void setActiveTool(Tool* tool) { m_activeTool = tool; }
+
 
 
 signals:
     void zoomChanged(double scale);
     void cropFinished(QRect rect);
+    void commandReady(std::unique_ptr<Command> command);
 protected:
     void wheelEvent(QWheelEvent *event) override;
     void mousePressEvent(QMouseEvent *event) override;
@@ -75,6 +83,8 @@ private:
     bool m_panMode {false};
     QPoint m_lastPanPoint{};
     QRubberBand *rubberBand{nullptr};
+
+    Tool* m_activeTool {nullptr};
 
 
 };

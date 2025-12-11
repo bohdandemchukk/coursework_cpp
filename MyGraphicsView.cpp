@@ -2,6 +2,7 @@
 #include <QRectF>
 #include <QPointF>
 #include <QScrollBar>
+#include "tool.h"
 
 MyGraphicsView::MyGraphicsView(QGraphicsScene* scene, QWidget* parent)
     : QGraphicsView(scene, parent),  rubberBand {new QRubberBand(QRubberBand::Rectangle, this)}
@@ -44,7 +45,21 @@ void MyGraphicsView::mousePressEvent(QMouseEvent *event) {
     }
 
     if (!getCropMode() && !getPanMode()) {
-        QGraphicsView::mousePressEvent(event);
+        bool handled = false;
+        if (m_activeTool && pixmapItem) {
+            QPointF scenePos = mapToScene(event->pos());
+            QPoint imagePoint = pixmapItem->mapFromScene(scenePos).toPoint();
+            if (pixmapItem->contains(scenePos)) {
+                imagePoint.setX(qBound(0, imagePoint.x(), pixmapItem->pixmap().width() - 1));
+                imagePoint.setY(qBound(0, imagePoint.y(), pixmapItem->pixmap().height() - 1));
+                m_activeTool->onMousePress(imagePoint, event->button());
+                handled = true;
+            }
+        }
+
+        if (!handled) {
+            QGraphicsView::mousePressEvent(event);
+        }
         return;
     }
 
@@ -69,7 +84,21 @@ void MyGraphicsView::mouseMoveEvent(QMouseEvent *event) {
     }
 
     if (!getCropMode() && !getPanMode()) {
-        QGraphicsView::mouseMoveEvent(event);
+        bool handled = false;
+        if (m_activeTool && pixmapItem) {
+            QPointF scenePos = mapToScene(event->pos());
+            QPoint imagePoint = pixmapItem->mapFromScene(scenePos).toPoint();
+            if (pixmapItem->contains(scenePos)) {
+                imagePoint.setX(qBound(0, imagePoint.x(), pixmapItem->pixmap().width() - 1));
+                imagePoint.setY(qBound(0, imagePoint.y(), pixmapItem->pixmap().height() - 1));
+                m_activeTool->onMouseMove(imagePoint, event->buttons());
+                handled = true;
+            }
+        }
+
+        if (!handled) {
+            QGraphicsView::mouseMoveEvent(event);
+        }
         return;
     }
 
@@ -106,7 +135,24 @@ void MyGraphicsView::mouseReleaseEvent(QMouseEvent *event) {
 
 
     if (!getCropMode() && !getPanMode()) {
-        QGraphicsView::mouseReleaseEvent(event);
+        bool handled = false;
+        if (m_activeTool && pixmapItem) {
+            QPointF scenePos = mapToScene(event->pos());
+            QPoint imagePoint = pixmapItem->mapFromScene(scenePos).toPoint();
+            if (pixmapItem->contains(scenePos)) {
+                imagePoint.setX(qBound(0, imagePoint.x(), pixmapItem->pixmap().width() - 1));
+                imagePoint.setY(qBound(0, imagePoint.y(), pixmapItem->pixmap().height() - 1));
+                auto cmd = m_activeTool->onMouseRelease(imagePoint, event->button());
+                if (cmd) {
+                    emit commandReady(std::move(cmd));
+                }
+                handled = true;
+            }
+        }
+
+        if (!handled) {
+            QGraphicsView::mouseReleaseEvent(event);
+        }
         return;
     }
 
