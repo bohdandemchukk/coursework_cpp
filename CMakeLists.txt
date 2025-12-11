@@ -62,6 +62,10 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     cropcommand.h cropcommand.cpp
     collapsiblesection.h collapsiblesection.cpp
     filterslider.h filterslider.cpp
+    brushtool.h brushtool.cpp
+    erasertool.h erasertool.cpp
+    tool.h tool.cpp
+    strokecommand.h strokecommand.cpp
 
 
 

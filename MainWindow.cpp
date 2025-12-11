@@ -14,6 +14,8 @@
 #include <QSlider>
 #include <QPushButton>
 #include <QCheckBox>
+#include <QColorDialog>
+#include <QSpinBox>
 #include <QTransform>
 #include <algorithm>
 #include <QToolButton>
@@ -146,6 +148,18 @@ void MainWindow::createCentralCanvas()
 
     connect(m_graphicsView, &MyGraphicsView::cropFinished,
             this, &MainWindow::onCropFinished);
+
+    connect(m_graphicsView, &MyGraphicsView::commandReady,
+            this,
+            [this](Command* raw)
+            {
+                if (!raw) return;
+
+                std::unique_ptr<Command> cmd(raw);
+                undoRedoStack.push(std::move(cmd));
+                updateUndoRedoButtons();
+            });
+
 
     connect(m_graphicsView, &MyGraphicsView::zoomChanged,
             this, [this](double scale) {
@@ -353,6 +367,8 @@ void MainWindow::createFilterSections()
     QLayoutItem* stretch{layout->takeAt(layout->count() - 1)};
     delete stretch;
 
+    createToolsSection(layout);
+
     auto* basicSection{new CollapsibleSection("Basic", m_filterPanel)};
     auto* basicLayout{new QVBoxLayout()};
     basicLayout->setSpacing(5);
@@ -510,6 +526,81 @@ void MainWindow::createFilterSections()
     connect(flipVBtn,   &QPushButton::clicked, this, &MainWindow::flipV);
 }
 
+void MainWindow::createToolsSection(QVBoxLayout* layout)
+{
+    m_toolsSection = new CollapsibleSection("Tools", m_filterPanel);
+    auto* toolsLayout = new QVBoxLayout();
+    toolsLayout->setSpacing(8);
+
+    auto* brushRow = new QHBoxLayout();
+    auto* brushButton = new QPushButton("Brush");
+    brushButton->setCheckable(true);
+    auto* eraserButton = new QPushButton("Eraser");
+    eraserButton->setCheckable(true);
+
+    auto setExclusive = [brushButton, eraserButton](QPushButton* pressed) {
+        brushButton->setChecked(pressed == brushButton);
+        eraserButton->setChecked(pressed == eraserButton);
+    };
+
+    connect(brushButton, &QPushButton::clicked, this, [this, setExclusive, brushButton](bool checked) {
+        if (!checked) {
+            brushButton->setChecked(true);
+        }
+        setExclusive(brushButton);
+        setActiveTool(m_brushTool.get());
+    });
+
+    connect(eraserButton, &QPushButton::clicked, this, [this, setExclusive, eraserButton](bool checked) {
+        if (!checked) {
+            eraserButton->setChecked(true);
+        }
+        setExclusive(eraserButton);
+        setActiveTool(m_eraserTool.get());
+    });
+
+    brushRow->addWidget(brushButton);
+    brushRow->addWidget(eraserButton);
+
+    auto* sizeLayout = new QHBoxLayout();
+    auto* sizeLabel = new QLabel("Size:");
+    m_brushSizeSpin = new QSpinBox();
+    m_brushSizeSpin->setRange(1, 200);
+    m_brushSizeSpin->setValue(10);
+    connect(m_brushSizeSpin, QOverload<int>::of(&QSpinBox::valueChanged), this, [this](int value) {
+        if (m_brushTool) m_brushTool->setBrushSize(value);
+        if (m_eraserTool) m_eraserTool->setBrushSize(value);
+    });
+
+    sizeLayout->addWidget(sizeLabel);
+    sizeLayout->addWidget(m_brushSizeSpin);
+
+    auto* colorLayout = new QHBoxLayout();
+    auto* colorLabel = new QLabel("Color:");
+    m_colorButton = new QPushButton();
+    m_colorButton->setFixedSize(32, 24);
+    updateBrushColorButton();
+    connect(m_colorButton, &QPushButton::clicked, this, [this]() {
+        QColor chosen = QColorDialog::getColor(m_brushColor, this, "Select Brush Color");
+        if (!chosen.isValid()) return;
+        m_brushColor = chosen;
+        if (m_brushTool) m_brushTool->setColor(m_brushColor);
+        updateBrushColorButton();
+    });
+    colorLayout->addWidget(colorLabel);
+    colorLayout->addWidget(m_colorButton);
+
+    toolsLayout->addLayout(brushRow);
+    toolsLayout->addLayout(sizeLayout);
+    toolsLayout->addLayout(colorLayout);
+
+    m_toolsSection->setContentLayout(toolsLayout);
+    layout->addWidget(m_toolsSection);
+    m_sections.append(m_toolsSection);
+
+    brushButton->setChecked(true);
+}
+
 void MainWindow::setupShortcuts()
 {
     auto* zoomInShortcut{new QShortcut(QKeySequence("+"), this)};
@@ -554,6 +645,36 @@ void MainWindow::setupShortcuts()
     m_fitToScreenAction->setShortcut(QKeySequence("Ctrl+0"));
     m_saveAction->setShortcut(QKeySequence("Ctrl+S"));
     m_saveAsAction->setShortcut(QKeySequence("Ctrl+Shift+S"));
+}
+
+void MainWindow::initializeTools()
+{
+    m_brushTool = std::make_unique<BrushTool>(&workingImage, [this]() { updateImage(); }, m_graphicsView);
+    m_eraserTool = std::make_unique<EraserTool>(&workingImage, [this]() { updateImage(); }, m_graphicsView);
+
+    int size = m_brushSizeSpin ? m_brushSizeSpin->value() : 10;
+    m_brushTool->setBrushSize(size);
+    m_eraserTool->setBrushSize(size);
+
+    m_brushTool->setColor(m_brushColor);
+
+    setActiveTool(m_brushTool.get());
+}
+
+void MainWindow::setActiveTool(Tool* tool)
+{
+    m_activeTool = tool;
+    if (m_graphicsView) {
+        m_graphicsView->setActiveTool(m_activeTool);
+    }
+}
+
+void MainWindow::updateBrushColorButton()
+{
+    if (!m_colorButton) return;
+    QString style = QString("background-color: %1; border: 1px solid #444; border-radius: 3px;")
+                        .arg(m_brushColor.name());
+    m_colorButton->setStyleSheet(style);
 }
 
 void MainWindow::updatePanMode()
@@ -604,9 +725,9 @@ void MainWindow::openImage()
     QImage img(fileName);
     if (img.isNull()) return;
 
-    originalImage = img;
+    workingImage = img.convertToFormat(QImage::Format_ARGB32);
     if (m_graphicsView) {
-        m_graphicsView->setPixmap(QPixmap::fromImage(originalImage));
+        m_graphicsView->setPixmap(QPixmap::fromImage(workingImage));
     }
 
     filterState = FilterState{};
@@ -642,16 +763,17 @@ void MainWindow::openImage()
 
     fitToScreen();
 
+    initializeTools();
     rebuildPipeline();
     updateUndoRedoButtons();
 }
 
 void MainWindow::onCropFinished(const QRect& rect)
 {
-    if (originalImage.isNull()) return;
+    if (workingImage.isNull()) return;
 
     auto cmd{std::make_unique<CropCommand>(
-        &originalImage,
+        &workingImage,
         rect,
         [this]() {
             this->updateImage();
@@ -664,9 +786,9 @@ void MainWindow::onCropFinished(const QRect& rect)
 
 void MainWindow::fitToScreen()
 {
-    if (originalImage.isNull() || !m_graphicsView || !m_scaleSlider) return;
+    if (workingImage.isNull() || !m_graphicsView || !m_scaleSlider) return;
 
-    const QSize imgSize{originalImage.size()};
+    const QSize imgSize{workingImage.size()};
     const QSize viewSize{m_graphicsView->viewport()->size()};
 
     if (imgSize.isEmpty() || viewSize.isEmpty()) return;
@@ -779,9 +901,9 @@ void MainWindow::rebuildPipeline()
 
 void MainWindow::updateImage()
 {
-    if (originalImage.isNull() || !m_graphicsView) return;
+    if (workingImage.isNull() || !m_graphicsView) return;
 
-    QImage result {pipeline.process(originalImage)};
+    QImage result {pipeline.process(workingImage)};
     m_graphicsView->setPixmap(QPixmap::fromImage(result));
 }
 
@@ -860,6 +982,7 @@ void MainWindow::updateUndoRedoButtons()
 }
 
 void MainWindow::save() {
+
     if (m_currentFilePath.isEmpty()) {
         saveAs();
         return;
@@ -878,12 +1001,14 @@ void MainWindow::save() {
 
 void MainWindow::saveAs() {
 
+    if (m_currentFilePath.isEmpty()) return;
+
     QString fileName {QFileDialog::getSaveFileName(
         this,
         "Save Image As",
         "",
         "PNG (*.png);;JPEG (*.jpg *.jpeg);;BMP (*.bmp)"
-    )};
+        )};
 
     if (fileName.isEmpty()) return;
 

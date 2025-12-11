@@ -12,13 +12,17 @@
 #include <QSlider>
 #include <QCheckBox>
 #include <QString>
-
+#include <QSpinBox>
+#include <QPushButton>
+#include <QToolButton>
 
 #include "MyGraphicsView.h"
 #include "filterpipeline.h"
 #include "undoredostack.h"
 #include "changefilterintcommand.h"
 #include "changefilterboolcommand.h"
+#include "brushtool.h"
+#include "erasertool.h"
 
 #include "CollapsibleSection.h"
 #include "FilterSlider.h"
@@ -94,7 +98,6 @@ private:
     QAction* m_zoomOutAction {nullptr};
 
 
-    QImage originalImage{};
     QString m_currentFilePath{};
 
     struct FilterState {
@@ -126,9 +129,20 @@ private:
     FilterPipeline pipeline;
     UndoRedoStack undoRedoStack;
 
+    QImage workingImage {};
+
     bool m_isUpdatingSlider {false};
     bool m_isPanToolActive  {false};
     bool m_isSpacePanActive {false};
+
+    std::unique_ptr<BrushTool> m_brushTool;
+    std::unique_ptr<EraserTool> m_eraserTool;
+    Tool* m_activeTool {nullptr};
+    CollapsibleSection* m_toolsSection {nullptr};
+    QToolButton* m_toolsButton {nullptr};
+    QSpinBox* m_brushSizeSpin {nullptr};
+    QPushButton* m_colorButton {nullptr};
+    QColor m_brushColor {Qt::white};
 
     void applyGlobalStyle();
     void createActions();
@@ -137,6 +151,10 @@ private:
     void createFilterDock();
     void createFilterSections();
     void setupShortcuts();
+    void createToolsSection(QVBoxLayout* layout);
+    void initializeTools();
+    void setActiveTool(Tool* tool);
+    void updateBrushColorButton();
 
     void updateImage();
     void rebuildPipeline();
