@@ -60,6 +60,8 @@ public:
 
     void setActiveTool(Tool* tool) { m_activeTool = tool; }
 
+    QPoint mapToImage(const QPoint& viewPos) const;
+
 
 
 

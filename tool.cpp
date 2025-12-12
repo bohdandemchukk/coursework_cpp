@@ -22,3 +22,8 @@ void Tool::requestUpdate() const
         m_updateCallback();
     }
 }
+
+
+void Tool::setTargetImage(QImage* image) {
+    m_targetImage = image;
+}

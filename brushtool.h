@@ -16,8 +16,11 @@ public:
 
 protected:
     virtual void paintStroke(QPainter& painter, const QPoint& from, const QPoint& to);
+    bool hasPreview() const override { return !m_previewBuffer.isNull(); }
+    const QImage& previewImage() const override { return m_previewBuffer; }
 
 private:
+    bool isInsideImage(const QPoint& p) const;
     void beginStroke(const QPoint& pos);
     void continueStroke(const QPoint& pos);
     std::unique_ptr<Command> endStroke();
@@ -27,6 +30,8 @@ private:
     QRect m_boundingRect {};
     QImage m_mask {};
     QImage m_preStrokeSnapshot {};
+    QImage m_previewBuffer;
+
 };
 
 #endif // BRUSHTOOL_H

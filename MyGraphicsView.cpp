@@ -36,6 +36,12 @@ void MyGraphicsView::wheelEvent(QWheelEvent *event) {
 void MyGraphicsView::mousePressEvent(QMouseEvent *event) {
 
 
+    if (!m_activeTool)
+        return;
+
+    QPoint imagePos = mapToImage(event->pos());
+    m_activeTool->onMousePress(imagePos, event->button());
+
     if (getPanMode() && event->button() == Qt::LeftButton) {
         m_lastPanPoint = event->pos();
         setCursor(Qt::ClosedHandCursor);
@@ -68,10 +74,18 @@ void MyGraphicsView::mousePressEvent(QMouseEvent *event) {
         return;
     }
 
+
+
     QGraphicsView::mousePressEvent(event);
 }
 
 void MyGraphicsView::mouseMoveEvent(QMouseEvent *event) {
+
+    if (!m_activeTool)
+        return;
+
+    QPoint imagePos = mapToImage(event->pos());
+    m_activeTool->onMousePress(imagePos, event->button());
 
     if (getCropMode() && rubberBand->isVisible()) {
         rubberBand->setGeometry(QRect(getCropStart(), event->pos()).normalized());
@@ -111,56 +125,55 @@ void MyGraphicsView::mouseMoveEvent(QMouseEvent *event) {
     QGraphicsView::mouseMoveEvent(event);
 }
 
-void MyGraphicsView::mouseReleaseEvent(QMouseEvent *event) {
+QPoint MyGraphicsView::mapToImage(const QPoint& viewPos) const {
+    QPointF scenePos = mapToScene(viewPos);
+    return scenePos.toPoint();
+}
 
-
-    if (getCropMode() && event->button() == Qt::LeftButton && rubberBand->isVisible()) {
-        rubberBand->hide();
-
-        QRectF sceneRect = mapToScene(rubberBand->geometry()).boundingRect();
-
-        QPixmap cropped = getPixmap().copy(sceneRect.toRect());
-
-        if (!cropped.isNull()) {
-            setPixmap(cropped);
-        }
-
-        setCropMode(false);
-
-        emit cropFinished(sceneRect.toRect());
-
-    }
-
+void MyGraphicsView::mouseReleaseEvent(QMouseEvent* event)
+{
+    // --- PAN MODE ---
     if (getPanMode() && event->button() == Qt::LeftButton) {
         setCursor(Qt::OpenHandCursor);
         event->accept();
         return;
     }
 
+    // --- CROP MODE ---
+    if (getCropMode() && event->button() == Qt::LeftButton && rubberBand->isVisible()) {
+        rubberBand->hide();
 
+        QRectF sceneRect = mapToScene(rubberBand->geometry()).boundingRect();
+        emit cropFinished(sceneRect.toRect());
 
-    if (!getCropMode() && !getPanMode()) {
-        if (m_activeTool) {
-            QPointF scenePos = mapToScene(event->pos());
-            QPoint imagePoint = pixmapItem ? pixmapItem->mapFromScene(scenePos).toPoint() : QPoint();
-
-            if (pixmapItem) {
-                imagePoint.setX(qBound(0, imagePoint.x(), pixmapItem->pixmap().width() - 1));
-                imagePoint.setY(qBound(0, imagePoint.y(), pixmapItem->pixmap().height() - 1));
-            }
-
-            auto cmd = m_activeTool->onMouseRelease(imagePoint, event->button());
-            if (cmd) {
-                emit commandReady(cmd.release());
-            }
-
-            event->accept();
-            return;
-        }
+        setCropMode(false);
+        event->accept();
+        return;
     }
 
+    // --- TOOL MODE ---
+    if (m_activeTool) {
+        QPoint imagePos = mapToImage(event->pos());
+
+        // 🔥 КЛІПИМО, АЛЕ НЕ RETURN
+        if (pixmapItem) {
+            imagePos.setX(qBound(0, imagePos.x(), pixmapItem->pixmap().width()  - 1));
+            imagePos.setY(qBound(0, imagePos.y(), pixmapItem->pixmap().height() - 1));
+        }
+
+        std::unique_ptr<Command> cmd =
+            m_activeTool->onMouseRelease(imagePos, event->button());
+
+        if (cmd) {
+            emit commandReady(cmd.release());
+        }
+
+        event->accept();
+        return;
+    }
 
     QGraphicsView::mouseReleaseEvent(event);
 }
+
 
 

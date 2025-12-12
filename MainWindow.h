@@ -16,6 +16,7 @@
 #include <QPushButton>
 #include <QToolButton>
 
+#include "layermanager.h"
 #include "MyGraphicsView.h"
 #include "filterpipeline.h"
 #include "undoredostack.h"
@@ -26,7 +27,8 @@
 
 #include "CollapsibleSection.h"
 #include "FilterSlider.h"
-
+#include "layerspanel.h"
+#include "layermanager.h"
 
 class MainWindow : public QMainWindow
 {
@@ -50,6 +52,11 @@ private:
 
     QDockWidget* m_filterDock {nullptr};
     QWidget* m_filterPanel {nullptr};
+
+    QDockWidget* m_layersDock {nullptr};
+    LayersPanel* m_layersPanel {nullptr};
+
+
     QList<CollapsibleSection*> m_sections{};
 
     QSlider* m_scaleSlider {nullptr};
@@ -126,10 +133,10 @@ private:
     };
 
     FilterState filterState;
+    LayerManager m_layerManager{};
     FilterPipeline pipeline;
     UndoRedoStack undoRedoStack;
 
-    QImage workingImage {};
 
     bool m_isUpdatingSlider {false};
     bool m_isPanToolActive  {false};
@@ -149,6 +156,7 @@ private:
     void createTopBar();
     void createCentralCanvas();
     void createFilterDock();
+    void createLayersDock();
     void createFilterSections();
     void setupShortcuts();
     void createToolsSection(QVBoxLayout* layout);
@@ -156,9 +164,20 @@ private:
     void setActiveTool(Tool* tool);
     void updateBrushColorButton();
 
-    void updateImage();
+    void updateComposite();
+    void updateActiveLayerImage(const QImage &image);
+    QImage compositeWithFilters();
+    QImage* activeLayerImage();
+    void selectActiveLayer(int index);
     void rebuildPipeline();
     void updateUndoRedoButtons();
+
+
+    void handleAddLayer();
+    void handleDeleteLayer(int managerIndex);
+    void handleMoveLayer(int from, int to);
+    void handleVisibilityChanged(int managerIndex, bool visible);
+    void handleOpacityChanged(int managerIndex, float opacity);
 
     void changeFilterInt(int* target, int newValue);
     void changeFilterBool(bool* target, bool newValue);

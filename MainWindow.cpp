@@ -22,6 +22,7 @@
 #include <QMessageBox>
 #include "cropcommand.h"
 
+#include "layercommands.h"
 #include "rotatefilter.h"
 #include "flipfilter.h"
 #include "blurfilter.h"
@@ -52,10 +53,18 @@ MainWindow::MainWindow(QWidget *parent)
     createActions();
     createTopBar();
     createFilterDock();
+    createLayersDock();
     createFilterSections();
     setupShortcuts();
 
     updateUndoRedoButtons();
+
+    m_layerManager.setOnChanged([this]() {
+        if (m_brushTool) m_brushTool->setTargetImage(activeLayerImage());
+        if (m_eraserTool) m_eraserTool->setTargetImage(activeLayerImage());
+        if (m_layersPanel) m_layersPanel->setLayers(m_layerManager.layers(), m_layerManager.activeLayerIndex());
+        updateComposite();
+    });
 
     resize(1400, 900);
 }
@@ -359,6 +368,25 @@ void MainWindow::createFilterDock()
     m_filterDock->setMinimumWidth(320);
 }
 
+void MainWindow::createLayersDock()
+{
+    m_layersDock = new QDockWidget(tr("Layers"), this);
+    m_layersPanel = new LayersPanel(this);
+    m_layersDock->setWidget(m_layersPanel);
+    addDockWidget(Qt::RightDockWidgetArea, m_layersDock);
+
+    connect(m_layersPanel, &LayersPanel::activeLayerChanged, this, &MainWindow::selectActiveLayer);
+    connect(m_layersPanel, &LayersPanel::addLayerRequested, this, &MainWindow::handleAddLayer);
+    connect(m_layersPanel, &LayersPanel::deleteLayerRequested, this, &MainWindow::handleDeleteLayer);
+    connect(m_layersPanel, &LayersPanel::moveLayerRequested, this, &MainWindow::handleMoveLayer);
+    connect(m_layersPanel, &LayersPanel::visibilityToggled, this, &MainWindow::handleVisibilityChanged);
+    connect(m_layersPanel, &LayersPanel::opacityChanged, this, &MainWindow::handleOpacityChanged);
+
+    if (m_layersPanel)
+        m_layersPanel->setLayers(m_layerManager.layers(), m_layerManager.activeLayerIndex());
+}
+
+
 void MainWindow::createFilterSections()
 {
     auto* layout{qobject_cast<QVBoxLayout*>(m_filterPanel->layout())};
@@ -649,8 +677,8 @@ void MainWindow::setupShortcuts()
 
 void MainWindow::initializeTools()
 {
-    m_brushTool = std::make_unique<BrushTool>(&workingImage, [this]() { updateImage(); }, m_graphicsView);
-    m_eraserTool = std::make_unique<EraserTool>(&workingImage, [this]() { updateImage(); }, m_graphicsView);
+    m_brushTool = std::make_unique<BrushTool>(activeLayerImage(), [this]() { updateComposite(); }, m_graphicsView);
+    m_eraserTool = std::make_unique<EraserTool>(activeLayerImage(), [this]() { updateComposite(); }, m_graphicsView);
 
     int size = m_brushSizeSpin ? m_brushSizeSpin->value() : 10;
     m_brushTool->setBrushSize(size);
@@ -725,9 +753,20 @@ void MainWindow::openImage()
     QImage img(fileName);
     if (img.isNull()) return;
 
-    workingImage = img.convertToFormat(QImage::Format_ARGB32);
+    m_layerManager = LayerManager{};
+    m_layerManager.setCanvasSize(img.size());
+    m_layerManager.setOnChanged([this]() {
+        if (m_brushTool) m_brushTool->setTargetImage(activeLayerImage());
+        if (m_eraserTool) m_eraserTool->setTargetImage(activeLayerImage());
+        if (m_layersPanel) m_layersPanel->setLayers(m_layerManager.layers(), m_layerManager.activeLayerIndex());
+        updateComposite();
+    });
+
+    auto baseLayer = std::make_shared<Layer>(tr("Background"), img.convertToFormat(QImage::Format_ARGB32));
+    m_layerManager.addLayer(baseLayer);
+    m_layerManager.setActiveLayerIndex(0);
     if (m_graphicsView) {
-        m_graphicsView->setPixmap(QPixmap::fromImage(workingImage));
+        m_graphicsView->setPixmap(QPixmap::fromImage(compositeWithFilters()));
     }
 
     filterState = FilterState{};
@@ -770,13 +809,14 @@ void MainWindow::openImage()
 
 void MainWindow::onCropFinished(const QRect& rect)
 {
-    if (workingImage.isNull()) return;
+    QImage* target = activeLayerImage();
+    if (!target || target->isNull()) return;
 
     auto cmd{std::make_unique<CropCommand>(
-        &workingImage,
+        target,
         rect,
         [this]() {
-            this->updateImage();
+            this->updateComposite();
         }
         )};
 
@@ -786,9 +826,9 @@ void MainWindow::onCropFinished(const QRect& rect)
 
 void MainWindow::fitToScreen()
 {
-    if (workingImage.isNull() || !m_graphicsView || !m_scaleSlider) return;
+    if (!m_graphicsView || !m_scaleSlider) return;
 
-    const QSize imgSize{workingImage.size()};
+    const QSize imgSize{m_layerManager.canvasSize()};
     const QSize viewSize{m_graphicsView->viewport()->size()};
 
     if (imgSize.isEmpty() || viewSize.isEmpty()) return;
@@ -896,15 +936,118 @@ void MainWindow::rebuildPipeline()
     pipeline.addFilter(std::make_unique<VignetteFilter>(filterState.vignette));
     pipeline.addFilter(std::make_unique<BWFilter>(filterState.BWFilter));
 
-    updateImage();
+    updateComposite();
 }
 
-void MainWindow::updateImage()
+QImage* MainWindow::activeLayerImage()
 {
-    if (workingImage.isNull() || !m_graphicsView) return;
+    auto layer = m_layerManager.activeLayer();
+    if (!layer)
+        return nullptr;
+    return &layer->image();
+}
 
-    QImage result {pipeline.process(workingImage)};
-    m_graphicsView->setPixmap(QPixmap::fromImage(result));
+void MainWindow::selectActiveLayer(int index)
+{
+    m_layerManager.setActiveLayerIndex(index);
+
+    QImage* target = activeLayerImage();
+    if (m_brushTool) m_brushTool->setTargetImage(target);
+    if (m_eraserTool) m_eraserTool->setTargetImage(target);
+}
+
+QImage MainWindow::compositeWithFilters()
+{
+    QImage base = m_layerManager.composite();
+    if (base.isNull())
+        return base;
+
+    return pipeline.process(base);
+}
+
+
+
+void MainWindow::updateActiveLayerImage(const QImage &image)
+{
+    auto active = m_layerManager.activeLayer();
+    if (!active)
+        return;
+
+    active->setImage(image);
+    updateComposite();
+}
+
+void MainWindow::updateComposite()
+{
+    if (!m_graphicsView)
+        return;
+
+    QImage result = compositeWithFilters();
+    if (!result.isNull())
+    {
+        m_graphicsView->setPixmap(QPixmap::fromImage(result));
+    }
+}
+
+void MainWindow::handleAddLayer()
+{
+    if (!m_layerManager.canvasSize().isValid())
+        return;
+
+    QImage newImage(m_layerManager.canvasSize(), QImage::Format_ARGB32_Premultiplied);
+    newImage.fill(Qt::transparent);
+    QString name = tr("Layer %1").arg(m_layerManager.layerCount() + 1);
+
+    auto layer = std::make_shared<Layer>(name, newImage);
+    auto command = std::make_unique<AddLayerCommand>(m_layerManager, layer);
+    undoRedoStack.push(std::move(command));
+    m_layerManager.setActiveLayerIndex(m_layerManager.layerCount() - 1);
+    updateUndoRedoButtons();
+}
+
+void MainWindow::handleDeleteLayer(int managerIndex)
+{
+    if (managerIndex < 0 || managerIndex >= m_layerManager.layerCount())
+        return;
+
+    auto command = std::make_unique<RemoveLayerCommand>(m_layerManager, managerIndex);
+    undoRedoStack.push(std::move(command));
+    updateUndoRedoButtons();
+}
+
+void MainWindow::handleMoveLayer(int from, int to)
+{
+    int count = m_layerManager.layerCount();
+    if (from < 0 || from >= count)
+        return;
+
+    to = std::clamp(to, 0, count - 1);
+    if (from == to)
+        return;
+
+    auto command = std::make_unique<MoveLayerCommand>(m_layerManager, from, to);
+    undoRedoStack.push(std::move(command));
+    updateUndoRedoButtons();
+}
+
+void MainWindow::handleVisibilityChanged(int managerIndex, bool visible)
+{
+    if (managerIndex < 0 || managerIndex >= m_layerManager.layerCount())
+        return;
+
+    auto command = std::make_unique<SetLayerVisibilityCommand>(m_layerManager, managerIndex, visible);
+    undoRedoStack.push(std::move(command));
+    updateUndoRedoButtons();
+}
+
+void MainWindow::handleOpacityChanged(int managerIndex, float opacity)
+{
+    if (managerIndex < 0 || managerIndex >= m_layerManager.layerCount())
+        return;
+
+    auto command = std::make_unique<SetLayerOpacityCommand>(m_layerManager, managerIndex, opacity);
+    undoRedoStack.push(std::move(command));
+    updateUndoRedoButtons();
 }
 
 void MainWindow::doUndo()

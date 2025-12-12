@@ -10,27 +10,54 @@ BrushTool::BrushTool(QImage* targetImage, std::function<void()> updateCallback, 
 
 void BrushTool::onMousePress(const QPoint& imagePos, Qt::MouseButton button)
 {
-
-
     if (button != Qt::LeftButton) return;
+    if (!targetImage() || !m_view) return;
+    if (!isInsideImage(imagePos)) return;
 
     m_view->setMouseTracking(true);
     beginStroke(imagePos);
 }
 
+
 void BrushTool::onMouseMove(const QPoint& imagePos, Qt::MouseButtons buttons)
 {
-    if (!m_drawing || !(buttons & Qt::LeftButton)) return;
+    if (!m_drawing) return;
+    if (!(buttons & Qt::LeftButton)) return;
+    if (!targetImage()) return;
+    if (!isInsideImage(imagePos)) return;
+
     continueStroke(imagePos);
 }
 
+
+bool BrushTool::isInsideImage(const QPoint& p) const
+{
+    return targetImage() &&
+           p.x() >= 0 &&
+           p.y() >= 0 &&
+           p.x() < targetImage()->width() &&
+           p.y() < targetImage()->height();
+}
+
+
+
 std::unique_ptr<Command> BrushTool::onMouseRelease(const QPoint& imagePos, Qt::MouseButton button)
 {
-    if (!m_drawing || button != Qt::LeftButton) return nullptr;
-    continueStroke(imagePos);
+    if (!m_drawing || button != Qt::LeftButton)
+        return nullptr;
+
+    if (!targetImage() || !m_view) {
+        m_drawing = false;
+        return nullptr;
+    }
+
+    if (isInsideImage(imagePos))
+        continueStroke(imagePos);
+
     m_view->setMouseTracking(false);
     return endStroke();
 }
+
 
 void BrushTool::paintStroke(QPainter& painter, const QPoint& from, const QPoint& to)
 {
@@ -45,63 +72,71 @@ void BrushTool::beginStroke(const QPoint& pos)
 
     m_drawing = true;
     m_lastPos = pos;
-    m_boundingRect = QRect(pos, QSize(1, 1)).adjusted(-brushSize(), -brushSize(), brushSize(), brushSize());
+
+    m_previewBuffer = targetImage()->copy();
+
     m_mask = QImage(targetImage()->size(), QImage::Format_Alpha8);
     m_mask.fill(0);
+
+    m_boundingRect = QRect(pos, QSize(1, 1))
+                         .adjusted(-brushSize(), -brushSize(),
+                                   brushSize(), brushSize());
+
     m_preStrokeSnapshot = targetImage()->copy();
 
     continueStroke(pos);
 }
 
+
 void BrushTool::continueStroke(const QPoint& pos)
 {
-    if (!targetImage()) return;
+    if (!m_drawing) return;
 
-    QPainter painter(targetImage());
+    QPainter painter(&m_previewBuffer);
     painter.setRenderHint(QPainter::Antialiasing, true);
     paintStroke(painter, m_lastPos, pos);
 
     QPainter maskPainter(&m_mask);
     maskPainter.setRenderHint(QPainter::Antialiasing, true);
-    QPen maskPen(QColor(255, 255, 255), brushSize(), Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
+    QPen maskPen(Qt::white, brushSize(), Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
     maskPainter.setPen(maskPen);
     maskPainter.drawLine(m_lastPos, pos);
 
     m_boundingRect = m_boundingRect.united(expandedRect(m_lastPos, pos));
     m_lastPos = pos;
 
+    *targetImage() = m_previewBuffer;
     requestUpdate();
 }
 
+
+
+
 std::unique_ptr<Command> BrushTool::endStroke()
 {
-    if (!targetImage()) {
-        m_drawing = false;
-        return nullptr;
-    }
-
+    if (!m_drawing) return nullptr;
     m_drawing = false;
+
     QRect rect = m_boundingRect.intersected(targetImage()->rect());
     if (rect.isEmpty()) return nullptr;
 
     QImage before = m_preStrokeSnapshot.copy(rect);
-    QImage maskSection = m_mask.copy(rect);
+    QImage after  = m_previewBuffer.copy(rect);
+    QImage mask   = m_mask.copy(rect);
 
-    QImage after = targetImage()->copy(rect);
-
-    m_mask = QImage();
-    m_boundingRect = QRect();
-    m_preStrokeSnapshot = QImage();
+    *targetImage() = m_previewBuffer;
+    requestUpdate();
 
     return std::make_unique<StrokeCommand>(
         targetImage(),
         rect,
         before,
         after,
-        maskSection,
+        mask,
         [this]() { requestUpdate(); }
         );
 }
+
 
 QRect BrushTool::expandedRect(const QPoint& a, const QPoint& b) const
 {

@@ -26,6 +26,15 @@ public:
     void setColor(const QColor& color);
     QColor color() const { return m_color; }
 
+    void setTargetImage(QImage* image);
+
+    virtual bool hasPreview() const { return false; }
+    virtual const QImage& previewImage() const
+    {
+        static QImage empty;
+        return empty;
+    }
+
 protected:
     QImage* targetImage() const { return m_targetImage; }
     MyGraphicsView* m_view{};

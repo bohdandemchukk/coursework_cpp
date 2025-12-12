@@ -66,6 +66,10 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     erasertool.h erasertool.cpp
     tool.h tool.cpp
     strokecommand.h strokecommand.cpp
+    layer.h layer.cpp
+    layercommands.h layercommands.cpp
+    layermanager.h layermanager.cpp
+    layerspanel.h layerspanel.cpp
 
 
 
