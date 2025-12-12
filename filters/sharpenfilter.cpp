@@ -53,4 +53,7 @@ QImage SharpenFilter::apply(const QImage& input) const {
     return result;
 }
 
+std::unique_ptr<ImageFilter> SharpenFilter::clone() const {
+    return std::make_unique<SharpenFilter>(*this);
+}
 

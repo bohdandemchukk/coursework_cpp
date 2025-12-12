@@ -2,6 +2,25 @@
 
 FilterPipeline::FilterPipeline() {}
 
+FilterPipeline::FilterPipeline(const FilterPipeline& other)
+{
+    for (const auto& f : other.filters)
+        filters.push_back(f->clone());
+}
+
+FilterPipeline& FilterPipeline::operator=(const FilterPipeline& other)
+{
+    if (this == &other)
+        return *this;
+
+    filters.clear();
+    for (const auto& f : other.filters)
+        filters.push_back(f->clone());
+
+    return *this;
+}
+
+
 void FilterPipeline::addFilter(std::unique_ptr<ImageFilter> filter) {
     if (filter) {
         filters.push_back(std::move(filter));

@@ -55,10 +55,34 @@ LayersPanel::LayersPanel(QWidget* parent)
     opacityLayout->addLayout(opacityRow);
     layout->addLayout(opacityLayout);
 
+    auto* blendLayout = new QHBoxLayout();
+    auto* blendLabel = new QLabel(tr("Blend"), this);
+    m_blendModeCombo = new QComboBox(this);
+    m_blendModeCombo->addItem("Normal");
+    m_blendModeCombo->addItem("Multiply");
+    m_blendModeCombo->addItem("Screen");
+    m_blendModeCombo->addItem("Overlay");
+    blendLayout->addWidget(blendLabel);
+    blendLayout->addWidget(m_blendModeCombo);
+    layout->addLayout(blendLayout);
+
+
     connect(m_opacitySlider, &QSlider::sliderPressed, this, &LayersPanel::onOpacitySliderPressed);
     connect(m_opacitySlider, &QSlider::sliderReleased, this, &LayersPanel::onOpacitySliderReleased);
     connect(m_opacitySlider, &QSlider::valueChanged, this, &LayersPanel::onOpacityValueChanged);
     connect(m_opacitySpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &LayersPanel::onOpacitySpinChanged);
+    connect(m_blendModeCombo,
+            QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this,
+            [this](int index)
+            {
+                if (m_blockSignals) return;
+                int managerIndex = selectedManagerIndex();
+                if (managerIndex < 0) return;
+
+                emit blendModeChanged(managerIndex, index);
+            });
+
 }
 
 void LayersPanel::setLayers(const std::vector<std::shared_ptr<Layer>>& layers, int activeIndex)
@@ -125,13 +149,30 @@ void LayersPanel::updateOpacityControls(int managerIndex)
     bool hasSelection = managerIndex >= 0;
     m_opacitySlider->setEnabled(hasSelection);
     m_opacitySpin->setEnabled(hasSelection);
+    m_blendModeCombo->setEnabled(hasSelection);
 
-    float opacity = currentOpacityFromLayer(managerIndex);
-    m_opacitySlider->setValue(static_cast<int>(opacity * 100.0f));
-    m_opacitySpin->setValue(opacity);
+    if (hasSelection && managerIndex < static_cast<int>(m_layers.size()))
+    {
+        auto& layer = m_layers[managerIndex];
+
+        float opacity = layer ? layer->opacity() : 1.0f;
+        m_opacitySlider->setValue(static_cast<int>(opacity * 100.0f));
+        m_opacitySpin->setValue(opacity);
+
+        m_blendModeCombo->setCurrentIndex(
+            static_cast<int>(layer->blendMode())
+            );
+    }
+    else
+    {
+        m_opacitySlider->setValue(100);
+        m_opacitySpin->setValue(1.0);
+        m_blendModeCombo->setCurrentIndex(0);
+    }
 
     m_blockSignals = false;
 }
+
 
 void LayersPanel::onSelectionChanged()
 {

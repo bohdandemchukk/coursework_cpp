@@ -16,7 +16,7 @@ public:
     int getVignette() const;
 
     void setVignette(int vignette);
-
+    std::unique_ptr<ImageFilter> clone() const override;
 private:
     int m_vignette{};
 };

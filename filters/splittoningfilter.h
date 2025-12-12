@@ -14,7 +14,7 @@ public:
 
     int getSplitToning() const;
     void setSplitToning(int splitToning);
-
+    std::unique_ptr<ImageFilter> clone() const override;
 private:
     int m_splitToning {};
 };

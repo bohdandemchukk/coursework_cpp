@@ -18,7 +18,7 @@ public:
     int getSharpness() const;
 
     void setSharpness(int sharpness);
-
+    std::unique_ptr<ImageFilter> clone() const override;
 private:
 
     int m_sharpness{};

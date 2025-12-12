@@ -28,4 +28,6 @@ QImage BlurFilter::apply(const QImage& input) const {
 
 
 
-
+std::unique_ptr<ImageFilter> BlurFilter::clone() const {
+    return std::make_unique<BlurFilter>(*this);
+}

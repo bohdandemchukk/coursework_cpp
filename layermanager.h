@@ -6,6 +6,7 @@
 #include <functional>
 #include <memory>
 #include <vector>
+#include <QPainter>
 
 #include "layer.h"
 
@@ -41,7 +42,6 @@ public:
 private:
     void notifyChanged() const;
     void clampActiveIndex();
-
     std::vector<std::shared_ptr<Layer>> m_layers;
     QSize m_canvasSize;
     QImage::Format m_format;

@@ -107,3 +107,59 @@ void SetLayerOpacityCommand::undo()
     layer->setOpacity(m_oldOpacity);
     m_manager.notifyLayerChanged();
 }
+
+SetLayerBlendModeCommand::SetLayerBlendModeCommand(LayerManager& manager,
+                         int index,
+                         BlendMode newMode)
+    : m_manager(manager), m_index(index), m_new(newMode)
+{}
+
+void SetLayerBlendModeCommand::execute()
+{
+    auto layer = m_manager.layerAt(m_index);
+    if (!layer) return;
+
+    m_old = layer->blendMode();
+    layer->setBlendMode(m_new);
+    m_manager.notifyLayerChanged();
+}
+
+void SetLayerBlendModeCommand::undo()
+{
+    auto layer = m_manager.layerAt(m_index);
+    if (!layer) return;
+
+    layer->setBlendMode(m_old);
+    m_manager.notifyLayerChanged();
+}
+
+
+ChangeLayerPipelineCommand::ChangeLayerPipelineCommand(
+    LayerManager& manager,
+    int layerIndex,
+    FilterPipeline before,
+    FilterPipeline after
+    )
+    : m_manager(manager),
+    m_index(layerIndex),
+    m_before(std::move(before)),
+    m_after(std::move(after))
+{}
+
+void ChangeLayerPipelineCommand::execute()
+{
+    auto layer = m_manager.layerAt(m_index);
+    if (!layer) return;
+
+    layer->pipeline() = m_after;
+    m_manager.notifyLayerChanged();
+}
+
+void ChangeLayerPipelineCommand::undo()
+{
+    auto layer = m_manager.layerAt(m_index);
+    if (!layer) return;
+
+    layer->pipeline() = m_before;
+    m_manager.notifyLayerChanged();
+}

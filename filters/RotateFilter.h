@@ -18,7 +18,7 @@ public:
     int getAngle() const;
 
     void setAngle(int angle);
-
+    std::unique_ptr<ImageFilter> clone() const override;
 
 
 

@@ -32,5 +32,7 @@ QImage RotateFilter::apply(const QImage& input) const {
     return result;
 }
 
-
+std::unique_ptr<ImageFilter> RotateFilter::clone() const {
+    return std::make_unique<RotateFilter>(*this);
+}
 

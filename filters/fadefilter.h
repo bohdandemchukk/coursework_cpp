@@ -14,7 +14,7 @@ public:
 
     int getFade() const;
     void setFade(int fade);
-
+    std::unique_ptr<ImageFilter> clone() const override;
 private:
     int m_fade {};
 };

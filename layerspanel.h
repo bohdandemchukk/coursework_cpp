@@ -4,6 +4,7 @@
 #include <QWidget>
 #include <QListWidget>
 #include <QSlider>
+#include <QComboBox>
 #include <QDoubleSpinBox>
 #include <QPushButton>
 #include <QVBoxLayout>
@@ -27,6 +28,7 @@ signals:
     void moveLayerRequested(int fromIndex, int toIndex);
     void visibilityToggled(int managerIndex, bool visible);
     void opacityChanged(int managerIndex, float opacity);
+    void blendModeChanged(int managerIndex, int mode);
 
 private slots:
     void onSelectionChanged();
@@ -45,6 +47,7 @@ private:
     float currentOpacityFromLayer(int managerIndex) const;
     void updateOpacityControls(int managerIndex);
 
+    QComboBox* m_blendModeCombo {nullptr};
     QListWidget* m_list {nullptr};
     QSlider* m_opacitySlider {nullptr};
     QDoubleSpinBox* m_opacitySpin {nullptr};

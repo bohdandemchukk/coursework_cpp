@@ -52,3 +52,7 @@ int GammaFilter::getGamma() const {
 void GammaFilter::setGamma(int gamma) {
     m_gamma = gamma;
 }
+
+std::unique_ptr<ImageFilter> GammaFilter::clone() const {
+    return std::make_unique<GammaFilter>(*this);
+}

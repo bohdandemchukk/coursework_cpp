@@ -8,6 +8,7 @@ public:
     virtual ~ImageFilter() = default;
     virtual QImage apply(const QImage& input) const = 0;
     virtual bool isActive() const = 0;
+    virtual std::unique_ptr<ImageFilter> clone() const = 0;
 };
 
 #endif // IMAGEFILTER_H

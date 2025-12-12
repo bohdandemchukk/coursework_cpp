@@ -53,6 +53,7 @@ private:
     QDockWidget* m_filterDock {nullptr};
     QWidget* m_filterPanel {nullptr};
 
+
     QDockWidget* m_layersDock {nullptr};
     LayersPanel* m_layersPanel {nullptr};
 
@@ -166,6 +167,7 @@ private:
 
     void updateComposite();
     void updateActiveLayerImage(const QImage &image);
+    void syncFilterUIFromActiveLayer();
     QImage compositeWithFilters();
     QImage* activeLayerImage();
     void selectActiveLayer(int index);
@@ -173,6 +175,7 @@ private:
     void updateUndoRedoButtons();
 
 
+    void changeLayerFilters(std::function<void(FilterPipeline&)> edit);
     void handleAddLayer();
     void handleDeleteLayer(int managerIndex);
     void handleMoveLayer(int from, int to);

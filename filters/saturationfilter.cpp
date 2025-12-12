@@ -48,7 +48,9 @@ QImage SaturationFilter::apply(const QImage& input) const {
 }
 
 
-
+std::unique_ptr<ImageFilter> SaturationFilter::clone() const {
+    return std::make_unique<SaturationFilter>(*this);
+}
 
 
 

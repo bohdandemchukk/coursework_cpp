@@ -79,4 +79,42 @@ private:
     float m_oldOpacity {1.0f};
 };
 
+class SetLayerBlendModeCommand : public Command
+{
+public:
+    SetLayerBlendModeCommand(LayerManager& manager, int index, BlendMode newMode);
+
+    void execute() override;
+    void undo() override;
+
+
+private:
+    LayerManager& m_manager;
+    int m_index;
+    BlendMode m_old {BlendMode::Normal};
+    BlendMode m_new {BlendMode::Normal};
+};
+
 #endif // LAYERCOMMANDS_H
+
+
+class ChangeLayerPipelineCommand : public Command
+{
+public:
+    ChangeLayerPipelineCommand(
+        LayerManager& manager,
+        int layerIndex,
+        FilterPipeline before,
+        FilterPipeline after
+        );
+
+    void execute() override;
+    void undo() override;
+
+private:
+    LayerManager& m_manager;
+    int m_index;
+
+    FilterPipeline m_before;
+    FilterPipeline m_after;
+};

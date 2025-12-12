@@ -52,3 +52,8 @@ QImage SplitToningFilter::apply(const QImage &input) const {
 
     return result;
 }
+
+
+std::unique_ptr<ImageFilter> SplitToningFilter::clone() const {
+    return std::make_unique<SplitToningFilter>(*this);
+}

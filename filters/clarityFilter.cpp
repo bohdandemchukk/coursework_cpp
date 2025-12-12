@@ -61,7 +61,9 @@ QImage ClarityFilter::apply(const QImage& input) const {
     return result;
 }
 
-
+std::unique_ptr<ImageFilter> ClarityFilter::clone() const {
+    return std::make_unique<ClarityFilter>(*this);
+}
 
 
 

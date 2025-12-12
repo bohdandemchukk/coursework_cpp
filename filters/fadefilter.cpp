@@ -40,3 +40,8 @@ QImage FadeFilter::apply(const QImage &input) const {
 
     return result;
 }
+
+
+std::unique_ptr<ImageFilter> FadeFilter::clone() const {
+    return std::make_unique<FadeFilter>(*this);
+}

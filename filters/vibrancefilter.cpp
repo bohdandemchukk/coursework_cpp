@@ -77,3 +77,7 @@ int VibranceFilter::getVibrance() const {
 void VibranceFilter::setVibrance(int vibrance) {
     m_vibrance = vibrance;
 }
+
+std::unique_ptr<ImageFilter> VibranceFilter::clone() const {
+    return std::make_unique<VibranceFilter>(*this);
+}

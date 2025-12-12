@@ -17,7 +17,7 @@ public:
     int getGamma() const;
 
     void setGamma(int gamma);
-
+    std::unique_ptr<ImageFilter> clone() const override;
 private:
 
     int m_gamma{};

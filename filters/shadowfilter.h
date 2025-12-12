@@ -17,7 +17,7 @@ public:
     int getShadow() const;
 
     void setShadow(int shadow);
-
+    std::unique_ptr<ImageFilter> clone() const override;
 private:
 
     int m_shadow{};

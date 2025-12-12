@@ -40,3 +40,8 @@ QImage BrightnessFilter::apply(const QImage& input) const  {
 
     return result;
 }
+
+
+std::unique_ptr<ImageFilter> BrightnessFilter::clone() const  {
+    return std::make_unique<BrightnessFilter>(*this);
+}

@@ -43,3 +43,7 @@ QImage GrainFilter::apply(const QImage &input) const {
 
     return result;
 }
+
+std::unique_ptr<ImageFilter> GrainFilter::clone() const {
+    return std::make_unique<GrainFilter>(*this);
+}

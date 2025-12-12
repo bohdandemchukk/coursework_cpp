@@ -51,5 +51,7 @@ void TemperatureFilter::setTemperature(int temperature) {
 }
 
 
-
+std::unique_ptr<ImageFilter> TemperatureFilter::clone() const {
+    return std::make_unique<TemperatureFilter>(*this);
+}
 

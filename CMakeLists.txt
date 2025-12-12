@@ -41,6 +41,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     filters/sharpenfilter.h filters/sharpenfilter.cpp
     filterpipeline.h filterpipeline.cpp
 
+    filters/imagefilter.h
     filters/temperaturefilter.h filters/temperaturefilter.cpp
     filters/exposurefilter.h filters/exposurefilter.cpp
     filters/gammafilter.h filters/gammafilter.cpp

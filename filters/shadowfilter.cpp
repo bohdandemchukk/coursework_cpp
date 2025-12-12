@@ -53,3 +53,8 @@ int ShadowFilter::getShadow() const {
 void ShadowFilter::setShadow(int shadow) {
     m_shadow = shadow;
 }
+
+
+std::unique_ptr<ImageFilter> ShadowFilter::clone() const {
+    return std::make_unique<ShadowFilter>(*this);
+}

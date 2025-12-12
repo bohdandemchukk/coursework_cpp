@@ -55,3 +55,7 @@ int VignetteFilter::getVignette() const {
 void VignetteFilter::setVignette(int vignette) {
     m_vignette = vignette;
 }
+
+std::unique_ptr<ImageFilter> VignetteFilter::clone() const {
+    return std::make_unique<VignetteFilter>(*this);
+}

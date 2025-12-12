@@ -14,7 +14,7 @@ public:
     bool isActive() const override;
     int getContrast() const;
     void setContrast(int contrast);
-
+    std::unique_ptr<ImageFilter> clone() const override;
 private:
     int m_contrast {};
 };

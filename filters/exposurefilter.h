@@ -17,7 +17,7 @@ public:
     int getExposure() const;
 
     void setExposure(int exposure);
-
+    std::unique_ptr<ImageFilter> clone() const override;
 private:
 
     int m_exposure{};

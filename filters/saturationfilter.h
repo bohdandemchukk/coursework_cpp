@@ -14,7 +14,7 @@ public:
     bool isActive() const override;
     int getSaturation() const;
     void setSaturation(int saturation);
-
+    std::unique_ptr<ImageFilter> clone() const override;
 private:
     int m_saturation {};
 };

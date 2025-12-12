@@ -30,3 +30,8 @@ QImage FlipFilter::apply(const QImage& input) const {
 
     return input.mirrored(m_direction == Direction::Horizontal, m_direction == Direction::Vertical);
 }
+
+
+std::unique_ptr<ImageFilter> FlipFilter::clone() const {
+    return std::make_unique<FlipFilter>(*this);
+}

@@ -3,6 +3,15 @@
 
 #include <QImage>
 #include <QString>
+#include "filterpipeline.h"
+
+enum class BlendMode {
+    Normal,
+    Multiply,
+    Screen,
+    Overlay
+};
+
 
 class Layer
 {
@@ -22,11 +31,19 @@ public:
     float opacity() const;
     void setOpacity(float opacity);
 
+    BlendMode blendMode() const;
+    void setBlendMode(BlendMode mode);
+
+    FilterPipeline& pipeline() { return m_pipeline; }
+    const FilterPipeline& pipeline() const { return m_pipeline; }
+
 private:
     QString m_name;
     QImage m_image;
     bool m_visible;
-    float m_opacity; // 0.0 - 1.0
+    float m_opacity;
+    BlendMode m_blendMode {BlendMode::Normal};
+    FilterPipeline m_pipeline;
 };
 
 #endif // LAYER_H

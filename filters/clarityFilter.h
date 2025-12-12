@@ -13,7 +13,7 @@ public:
     bool isActive() const override;
     int getClarity() const;
     void setClarity(int clarity);
-
+    std::unique_ptr<ImageFilter> clone() const override;
 private:
     int m_clarity {};
 };

@@ -50,3 +50,8 @@ int ExposureFilter::getExposure() const {
 void ExposureFilter::setExposure(int exposure) {
     m_exposure = exposure;
 }
+
+
+std::unique_ptr<ImageFilter> ExposureFilter::clone() const {
+    return std::make_unique<ExposureFilter>(*this);
+}

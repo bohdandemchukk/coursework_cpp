@@ -51,3 +51,7 @@ void Layer::setOpacity(float opacity)
 {
     m_opacity = qBound(0.0f, opacity, 1.0f);
 }
+
+BlendMode Layer::blendMode() const { return m_blendMode; }
+
+void Layer::setBlendMode(BlendMode mode) { m_blendMode = mode; }

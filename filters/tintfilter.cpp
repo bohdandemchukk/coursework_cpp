@@ -47,6 +47,8 @@ void TintFilter::setTint(int tint) {
     m_tint = tint;
 }
 
-
+std::unique_ptr<ImageFilter> TintFilter::clone() const {
+    return std::make_unique<TintFilter>(*this);
+}
 
 

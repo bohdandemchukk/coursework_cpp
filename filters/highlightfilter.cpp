@@ -53,3 +53,8 @@ int HighlightFilter::getHighlight() const {
 void HighlightFilter::setHighlight(int highlight) {
     m_highlight = highlight;
 }
+
+
+std::unique_ptr<ImageFilter> HighlightFilter::clone() const {
+    return std::make_unique<HighlightFilter>(*this);
+}

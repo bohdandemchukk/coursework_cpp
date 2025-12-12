@@ -25,7 +25,7 @@ public:
 
     bool getEnabled() const;
     void setEnabled();
-
+    std::unique_ptr<ImageFilter> clone() const override;
 
 
 private:

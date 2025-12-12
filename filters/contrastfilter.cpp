@@ -49,7 +49,9 @@ QImage ContrastFilter::apply(const QImage& input) const {
 }
 
 
-
+std::unique_ptr<ImageFilter> ContrastFilter::clone() const {
+    return std::make_unique<ContrastFilter>(*this);
+}
 
 
 

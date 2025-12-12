@@ -17,7 +17,7 @@ public:
     int getTemperature() const;
 
     void setTemperature(int temperature);
-
+    std::unique_ptr<ImageFilter> clone() const override;
 private:
 
     int m_temperature{};

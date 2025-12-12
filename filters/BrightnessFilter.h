@@ -18,6 +18,8 @@ public:
     int getBrightness() const;
     void setBrightness(int brightness);
 
+    std::unique_ptr<ImageFilter> clone() const override;
+
 
 
 

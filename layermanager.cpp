@@ -114,6 +114,16 @@ void LayerManager::setOnChanged(ChangeCallback callback)
     m_onChanged = std::move(callback);
 }
 
+static QPainter::CompositionMode toQtMode(BlendMode mode)
+{
+    switch (mode) {
+    case BlendMode::Multiply: return QPainter::CompositionMode_Multiply;
+    case BlendMode::Screen:   return QPainter::CompositionMode_Screen;
+    case BlendMode::Overlay:  return QPainter::CompositionMode_Overlay;
+    default:                  return QPainter::CompositionMode_SourceOver;
+    }
+}
+
 QImage LayerManager::composite() const
 {
     if (!m_canvasSize.isValid())
@@ -130,8 +140,13 @@ QImage LayerManager::composite() const
         if (!layer || !layer->isVisible())
             continue;
 
+        QImage img = layer->image();
+        QImage processed = layer->pipeline().process(img);
         painter.setOpacity(layer->opacity());
-        painter.drawImage(QPoint(0, 0), layer->image());
+        painter.setCompositionMode(toQtMode(layer->blendMode()));
+        painter.drawImage(QPoint(0,0), processed);
+
+
     }
 
     return result;

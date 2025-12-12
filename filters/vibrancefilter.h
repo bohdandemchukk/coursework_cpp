@@ -17,7 +17,7 @@ public:
     int getVibrance() const;
 
     void setVibrance(int vibrance);
-
+    std::unique_ptr<ImageFilter> clone() const override;
 private:
 
     int m_vibrance{};

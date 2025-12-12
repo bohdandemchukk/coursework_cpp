@@ -17,7 +17,7 @@ public:
     int getHighlight() const;
 
     void setHighlight(int highlight);
-
+    std::unique_ptr<ImageFilter> clone() const override;
 private:
 
     int m_highlight{};
