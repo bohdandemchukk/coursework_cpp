@@ -118,3 +118,20 @@ private:
     FilterPipeline m_before;
     FilterPipeline m_after;
 };
+
+
+class SetLayerClippedCommand : public Command {
+public:
+    SetLayerClippedCommand(LayerManager& mgr, int index, bool clipped);
+
+
+
+    void undo() override;
+
+    void execute() override;
+
+private:
+    LayerManager& m_mgr;
+    int m_index;
+    bool m_old, m_new;
+};

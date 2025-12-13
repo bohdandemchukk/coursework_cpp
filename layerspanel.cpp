@@ -42,6 +42,8 @@ LayersPanel::LayersPanel(QWidget* parent)
     connect(m_moveUpButton, &QPushButton::clicked, this, &LayersPanel::onMoveUp);
     connect(m_moveDownButton, &QPushButton::clicked, this, &LayersPanel::onMoveDown);
 
+
+
     auto* opacityLayout = new QVBoxLayout();
     auto* opacityRow = new QHBoxLayout();
     auto* opacityLabel = new QLabel(tr("Opacity"), this);
@@ -72,6 +74,22 @@ LayersPanel::LayersPanel(QWidget* parent)
     blendLayout->addWidget(m_blendModeCombo);
     layout->addLayout(blendLayout);
 
+    auto* clipLayout = new QHBoxLayout();
+    m_clipCheck = new QCheckBox(tr("Clip to layer below"), this);
+    clipLayout->addWidget(m_clipCheck);
+    clipLayout->addStretch();
+    layout->addLayout(clipLayout);
+
+    connect(m_clipCheck, &QCheckBox::toggled,
+            this, [this](bool checked)
+            {
+                if (m_blockSignals) return;
+
+                int index = selectedManagerIndex();
+                if (index < 0) return;
+
+                emit clippedChanged(index, checked);
+            });
 
     connect(m_opacitySlider, &QSlider::sliderPressed, this, &LayersPanel::onOpacitySliderPressed);
     connect(m_opacitySlider, &QSlider::sliderReleased, this, &LayersPanel::onOpacitySliderReleased);
@@ -90,6 +108,15 @@ LayersPanel::LayersPanel(QWidget* parent)
             });
 
 }
+
+bool LayersPanel::isAdjustmentLayer(int index) const
+{
+    if (index < 0 || index >= static_cast<int>(m_layers.size()))
+        return false;
+
+    return m_layers[index]->type() == LayerType::Adjustment;
+}
+
 
 void LayersPanel::setLayers(const std::vector<std::shared_ptr<Layer>>& layers, int activeIndex)
 {
@@ -152,12 +179,14 @@ void LayersPanel::updateOpacityControls(int managerIndex)
 {
     m_blockSignals = true;
 
-    bool hasSelection = managerIndex >= 0;
+    bool hasSelection = managerIndex >= 0 &&
+                        managerIndex < static_cast<int>(m_layers.size());
+
     m_opacitySlider->setEnabled(hasSelection);
     m_opacitySpin->setEnabled(hasSelection);
     m_blendModeCombo->setEnabled(hasSelection);
 
-    if (hasSelection && managerIndex < static_cast<int>(m_layers.size()))
+    if (hasSelection)
     {
         auto& layer = m_layers[managerIndex];
 
@@ -176,8 +205,19 @@ void LayersPanel::updateOpacityControls(int managerIndex)
         m_blendModeCombo->setCurrentIndex(0);
     }
 
+    if (hasSelection && isAdjustmentLayer(managerIndex))
+    {
+        m_clipCheck->setVisible(true);
+        m_clipCheck->setChecked(m_layers[managerIndex]->isClipped());
+    }
+    else
+    {
+        m_clipCheck->setVisible(false);
+    }
+
     m_blockSignals = false;
 }
+
 
 
 void LayersPanel::onSelectionChanged()

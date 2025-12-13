@@ -3,6 +3,7 @@
 #include <QPainter>
 #include <QPoint>
 #include <memory>
+#include <QDebug>
 
 namespace {
 QPainter::CompositionMode toQtMode(BlendMode mode)
@@ -127,6 +128,80 @@ void LayerManager::setOnChanged(ChangeCallback callback)
     m_onChanged = std::move(callback);
 }
 
+static QColor applyBlendMode(const QColor& base,
+                             const QColor& blend,
+                             BlendMode mode)
+{
+    auto f = [](float v) { return std::clamp(v, 0.0f, 1.0f); };
+
+    float bR = base.redF();
+    float bG = base.greenF();
+    float bB = base.blueF();
+
+    float aR = blend.redF();
+    float aG = blend.greenF();
+    float aB = blend.blueF();
+
+    float r, g, b;
+
+    switch (mode) {
+    case BlendMode::Multiply:
+        r = bR * aR;
+        g = bG * aG;
+        b = bB * aB;
+        break;
+
+    case BlendMode::Screen:
+        r = 1.0f - (1.0f - bR) * (1.0f - aR);
+        g = 1.0f - (1.0f - bG) * (1.0f - aG);
+        b = 1.0f - (1.0f - bB) * (1.0f - aB);
+        break;
+
+    case BlendMode::Overlay:
+        r = (bR < 0.5f) ? (2.0f * bR * aR)
+                        : (1.0f - 2.0f * (1.0f - bR) * (1.0f - aR));
+        g = (bG < 0.5f) ? (2.0f * bG * aG)
+                        : (1.0f - 2.0f * (1.0f - bG) * (1.0f - aG));
+        b = (bB < 0.5f) ? (2.0f * bB * aB)
+                        : (1.0f - 2.0f * (1.0f - bB) * (1.0f - aB));
+        break;
+
+    default:
+        r = aR;
+        g = aG;
+        b = aB;
+        break;
+    }
+
+    return QColor::fromRgbF(f(r), f(g), f(b), base.alphaF());
+}
+
+static float lerp(float a, float b, float t)
+{
+    return a + (b - a) * t;
+}
+
+
+static QRgb blendPixel(QRgb base, QRgb adj, float opacity, BlendMode mode)
+{
+    float a = qAlpha(base) / 255.0f;
+    if (a == 0.0f)
+        return base;
+
+    QColor cb(base);
+    QColor ca(adj);
+
+    QColor blended = applyBlendMode(cb, ca, mode);
+
+    QColor out;
+    out.setRedF(   lerp(cb.redF(),   blended.redF(),   opacity) );
+    out.setGreenF( lerp(cb.greenF(), blended.greenF(), opacity) );
+    out.setBlueF(  lerp(cb.blueF(),  blended.blueF(),  opacity) );
+    out.setAlphaF(a);
+
+    return out.rgba();
+}
+
 
 QImage LayerManager::composite() const
 {
@@ -136,34 +211,98 @@ QImage LayerManager::composite() const
     QImage result(m_canvasSize, m_format);
     result.fill(Qt::transparent);
 
-    for (const auto &layer : m_layers)
+    bool hasPending = false;
+    QImage pendingImg;
+    float pendingOpacity = 1.0f;
+    BlendMode pendingBlend = BlendMode::Normal;
+
+    auto flushPending = [&]() {
+        if (!hasPending) return;
+
+        QPainter painter(&result);
+        painter.setOpacity(pendingOpacity);
+        painter.setCompositionMode(toQtMode(pendingBlend));
+        painter.drawImage(QPoint(0,0), pendingImg);
+
+        hasPending = false;
+        pendingImg = QImage();
+    };
+
+    for (const auto& layer : m_layers)
     {
         if (!layer || !layer->isVisible())
             continue;
 
-
         if (layer->type() == LayerType::Pixel)
         {
+
+            flushPending();
+
             auto pixel = std::static_pointer_cast<PixelLayer>(layer);
-            QPainter painter(&result);
-            painter.setOpacity(pixel->opacity());
-            painter.setCompositionMode(toQtMode(pixel->blendMode()));
-            painter.drawImage(QPoint(0, 0), pixel->image());
+
+
+            pendingImg = pixel->image();
+            if (pendingImg.format() != m_format)
+                pendingImg = pendingImg.convertToFormat(m_format);
+
+            pendingOpacity = pixel->opacity();
+            pendingBlend   = pixel->blendMode();
+            hasPending = true;
         }
         else if (layer->type() == LayerType::Adjustment)
         {
-            auto adjustment = std::static_pointer_cast<AdjustmentLayer>(layer);
-            QImage filtered = adjustment->pipeline().process(result);
+            auto adj = std::static_pointer_cast<AdjustmentLayer>(layer);
 
-            QPainter painter(&result);
-            painter.setOpacity(adjustment->opacity());
-            painter.setCompositionMode(toQtMode(adjustment->blendMode()));
-            painter.drawImage(QPoint(0, 0), filtered);
+            if (adj->isClipped())
+            {
+
+                if (!hasPending) continue;
+
+                QImage adjusted = adj->pipeline().process(pendingImg);
+                if (adjusted.format() != pendingImg.format())
+                    adjusted = adjusted.convertToFormat(pendingImg.format());
+
+                for (int y = 0; y < pendingImg.height(); ++y) {
+                    QRgb* b = reinterpret_cast<QRgb*>(pendingImg.scanLine(y));
+                    QRgb* a = reinterpret_cast<QRgb*>(adjusted.scanLine(y));
+
+                    for (int x = 0; x < pendingImg.width(); ++x) {
+                        if (qAlpha(b[x]) == 0) continue;
+
+                        b[x] = blendPixel(
+                            b[x],
+                            a[x],
+                            adj->opacity(),
+                            adj->blendMode()
+                            );
+                    }
+                }
+            }
+            else
+            {
+                flushPending();
+
+                QImage base = result;
+                QImage adjusted = adj->pipeline().process(base);
+
+                for (int y = 0; y < base.height(); ++y) {
+                    QRgb* b = reinterpret_cast<QRgb*>(base.scanLine(y));
+                    QRgb* a = reinterpret_cast<QRgb*>(adjusted.scanLine(y));
+                    QRgb* r = reinterpret_cast<QRgb*>(result.scanLine(y));
+
+                    for (int x = 0; x < base.width(); ++x) {
+                        if (qAlpha(b[x]) == 0) { r[x] = b[x]; continue; }
+                        r[x] = blendPixel(b[x], a[x], adj->opacity(), adj->blendMode());
+                    }
+                }
+            }
         }
     }
 
+    flushPending();
     return result;
 }
+
 
 void LayerManager::notifyChanged() const
 {

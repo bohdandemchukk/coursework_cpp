@@ -51,7 +51,6 @@ void MoveLayerCommand::execute()
 
 void MoveLayerCommand::undo()
 {
-    // execute already swapped indices for undo
     m_manager.moveLayer(m_from, m_to);
     std::swap(m_from, m_to);
 }
@@ -163,3 +162,19 @@ void ChangeLayerPipelineCommand::undo()
     layer->pipeline() = m_before;
     m_manager.notifyLayerChanged();
 }
+
+SetLayerClippedCommand::SetLayerClippedCommand(LayerManager& mgr, int index, bool clipped)
+        : m_mgr(mgr), m_index(index), m_new(clipped)
+    {
+        m_old = mgr.layerAt(index)->isClipped();
+    }
+
+void SetLayerClippedCommand::undo() {
+        m_mgr.layerAt(m_index)->setClipped(m_old);
+        m_mgr.notifyLayerChanged();
+    }
+
+void SetLayerClippedCommand::execute() {
+        m_mgr.layerAt(m_index)->setClipped(m_new);
+        m_mgr.notifyLayerChanged();
+    }

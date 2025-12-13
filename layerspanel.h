@@ -8,6 +8,7 @@
 #include <QDoubleSpinBox>
 #include <QPushButton>
 #include <QVBoxLayout>
+#include <QCheckBox>
 #include <vector>
 #include <memory>
 
@@ -19,10 +20,12 @@ class LayersPanel : public QWidget
 public:
     explicit LayersPanel(QWidget* parent = nullptr);
 
+    bool isAdjustmentLayer(int index) const;
     void setLayers(const std::vector<std::shared_ptr<Layer>>& layers, int activeIndex);
 
 signals:
     void activeLayerChanged(int managerIndex);
+    void clippedChanged(int index, bool clipped);
     void addLayerRequested();
     void addAdjustmentLayerRequested();
     void addImageLayerRequested();
@@ -49,11 +52,11 @@ private:
     int selectedManagerIndex() const;
     float currentOpacityFromLayer(int managerIndex) const;
     void updateOpacityControls(int managerIndex);
-
     QComboBox* m_blendModeCombo {nullptr};
     QListWidget* m_list {nullptr};
     QSlider* m_opacitySlider {nullptr};
     QDoubleSpinBox* m_opacitySpin {nullptr};
+    QCheckBox* m_clipCheck = nullptr;
     QPushButton* m_addButton {nullptr};
     QPushButton* m_addAdjButton {nullptr};
     QPushButton* m_addImageButton {nullptr};

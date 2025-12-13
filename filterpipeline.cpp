@@ -37,17 +37,14 @@ void FilterPipeline::clear() {
     filters.clear();
 }
 
-QImage FilterPipeline::process(const QImage &input) const {
+QImage FilterPipeline::process(const QImage& src) const
+{
+    QImage img = src.convertToFormat(QImage::Format_ARGB32);
 
-    QImage result {input};
+    for (auto& filter : filters)
+        img = filter->apply(img);
 
-    for (const auto& filter: filters) {
-        if (filter->isActive()) {
-            result = filter->apply(result);
-        }
-    }
-
-    return result;
+    return img.convertToFormat(QImage::Format_ARGB32_Premultiplied);
 }
 
 

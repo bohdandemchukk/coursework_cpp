@@ -401,6 +401,21 @@ void MainWindow::createLayersDock()
                 updateUndoRedoButtons();
             });
 
+    connect(m_layersPanel, &LayersPanel::clippedChanged,
+            this, [this](int index, bool clipped)
+            {
+                qDebug() << "UI clippedChanged:" << index << clipped;
+
+                auto cmd = std::make_unique<SetLayerClippedCommand>(
+                    m_layerManager,
+                    index,
+                    clipped
+                    );
+                undoRedoStack.push(std::move(cmd));
+                updateUndoRedoButtons();
+            });
+
+
 
     if (m_layersPanel)
         m_layersPanel->setLayers(m_layerManager.layers(), m_layerManager.activeLayerIndex());

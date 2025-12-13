@@ -30,6 +30,9 @@ public:
     const QString &name() const;
     void setName(const QString &name);
 
+    bool isClipped() const { return m_clipped; }
+    void setClipped(bool v) { m_clipped = v; }
+
     bool isVisible() const;
     void setVisible(bool visible);
 
@@ -45,6 +48,7 @@ private:
     QString m_name;
     bool m_visible;
     float m_opacity;
+    bool m_clipped = false;
     BlendMode m_blendMode {BlendMode::Normal};
 
 };
