@@ -151,6 +151,8 @@ void MainWindow::createCentralCanvas()
 {
     m_scene = new QGraphicsScene(this);
     m_graphicsView = new MyGraphicsView(m_scene, this);
+    m_graphicsView->setLayerManager(&m_layerManager);
+
     m_graphicsView->setStyleSheet(R"(
         QGraphicsView {
             background-color: #111111;
@@ -1118,59 +1120,59 @@ void MainWindow::changeLayerFilters(std::function<void(FilterPipeline&)> edit)
 
 void MainWindow::syncFilterUIFromActiveLayer()
 {
-     auto layer = std::dynamic_pointer_cast<AdjustmentLayer>(m_layerManager.activeLayer());
+    auto layer = std::dynamic_pointer_cast<AdjustmentLayer>(m_layerManager.activeLayer());
     m_isUpdatingSlider = true;
 
-     if (!layer)
-     {
-         setFilterControlsEnabled(false);
-         if (m_bwCheckbox) m_bwCheckbox->setChecked(false);
-         if (m_exposureSlider)   m_exposureSlider->setValue(0);
-         if (m_contrastSlider)   m_contrastSlider->setValue(0);
-         if (m_brightnessSlider) m_brightnessSlider->setValue(0);
-         if (m_highlightSlider)  m_highlightSlider->setValue(0);
-         if (m_shadowSlider)     m_shadowSlider->setValue(0);
-         if (m_claritySlider)    m_claritySlider->setValue(0);
-         if (m_temperatureSlider) m_temperatureSlider->setValue(0);
-         if (m_tintSlider)        m_tintSlider->setValue(0);
-         if (m_saturationSlider)  m_saturationSlider->setValue(0);
-         if (m_vibranceSlider)    m_vibranceSlider->setValue(0);
-         if (m_splitToningSlider) m_splitToningSlider->setValue(0);
-         if (m_vignetteSlider)    m_vignetteSlider->setValue(0);
-         if (m_grainSlider)       m_grainSlider->setValue(0);
-         if (m_fadeSlider)        m_fadeSlider->setValue(0);
-         if (m_sharpenSlider)     m_sharpenSlider->setValue(0);
-         if (m_blurSlider)        m_blurSlider->setValue(0);
-         if (m_gammaSlider)       m_gammaSlider->setValue(0);
-         m_isUpdatingSlider = false;
-         return;
-     }
+    if (!layer)
+    {
+        setFilterControlsEnabled(false);
+        if (m_bwCheckbox) m_bwCheckbox->setChecked(false);
+        if (m_exposureSlider)   m_exposureSlider->setValue(0);
+        if (m_contrastSlider)   m_contrastSlider->setValue(0);
+        if (m_brightnessSlider) m_brightnessSlider->setValue(0);
+        if (m_highlightSlider)  m_highlightSlider->setValue(0);
+        if (m_shadowSlider)     m_shadowSlider->setValue(0);
+        if (m_claritySlider)    m_claritySlider->setValue(0);
+        if (m_temperatureSlider) m_temperatureSlider->setValue(0);
+        if (m_tintSlider)        m_tintSlider->setValue(0);
+        if (m_saturationSlider)  m_saturationSlider->setValue(0);
+        if (m_vibranceSlider)    m_vibranceSlider->setValue(0);
+        if (m_splitToningSlider) m_splitToningSlider->setValue(0);
+        if (m_vignetteSlider)    m_vignetteSlider->setValue(0);
+        if (m_grainSlider)       m_grainSlider->setValue(0);
+        if (m_fadeSlider)        m_fadeSlider->setValue(0);
+        if (m_sharpenSlider)     m_sharpenSlider->setValue(0);
+        if (m_blurSlider)        m_blurSlider->setValue(0);
+        if (m_gammaSlider)       m_gammaSlider->setValue(0);
+        m_isUpdatingSlider = false;
+        return;
+    }
 
-     setFilterControlsEnabled(true);
-     auto& p = layer->pipeline();
+    setFilterControlsEnabled(true);
+    auto& p = layer->pipeline();
 
-     m_exposureSlider->setValue(p.find<ExposureFilter>() ? p.find<ExposureFilter>()->getExposure() : 0);
-     m_temperatureSlider->setValue(p.find<TemperatureFilter>() ? p.find<TemperatureFilter>()->getTemperature() : 0);
-     m_blurSlider->setValue(p.find<BlurFilter>() ? p.find<BlurFilter>()->getBlur() : 0);
-     m_brightnessSlider->setValue(p.find<BrightnessFilter>() ? p.find<BrightnessFilter>()->getBrightness() : 0);
-     m_claritySlider->setValue(p.find<ClarityFilter>() ? p.find<ClarityFilter>()->getClarity() : 0);
-     m_contrastSlider->setValue(p.find<ContrastFilter>() ? p.find<ContrastFilter>()->getContrast() : 0);
-     m_fadeSlider->setValue(p.find<FadeFilter>() ? p.find<FadeFilter>()->getFade() : 0);
-     m_gammaSlider->setValue(p.find<GammaFilter>() ? p.find<GammaFilter>()->getGamma() : 0);
-     m_grainSlider->setValue(p.find<GrainFilter>() ? p.find<GrainFilter>()->getGrain() : 0);
-     m_highlightSlider->setValue(p.find<HighlightFilter>() ? p.find<HighlightFilter>()->getHighlight() : 0);
-     m_saturationSlider->setValue(p.find<SaturationFilter>() ? p.find<SaturationFilter>()->getSaturation() : 0);
-     m_shadowSlider->setValue(p.find<ShadowFilter>() ? p.find<ShadowFilter>()->getShadow() : 0);
-     m_sharpenSlider->setValue(p.find<SharpenFilter>() ? p.find<SharpenFilter>()->getSharpness() : 0);
-     m_splitToningSlider->setValue(p.find<SplitToningFilter>() ? p.find<SplitToningFilter>()->getSplitToning() : 0);
-     m_tintSlider->setValue(p.find<TintFilter>() ? p.find<TintFilter>()->getTint() : 0);
-     m_vibranceSlider->setValue(p.find<VibranceFilter>() ? p.find<VibranceFilter>()->getVibrance() : 0);
-     m_vignetteSlider->setValue(p.find<VignetteFilter>() ? p.find<VignetteFilter>()->getVignette() : 0);
+    m_exposureSlider->setValue(p.find<ExposureFilter>() ? p.find<ExposureFilter>()->getExposure() : 0);
+    m_temperatureSlider->setValue(p.find<TemperatureFilter>() ? p.find<TemperatureFilter>()->getTemperature() : 0);
+    m_blurSlider->setValue(p.find<BlurFilter>() ? p.find<BlurFilter>()->getBlur() : 0);
+    m_brightnessSlider->setValue(p.find<BrightnessFilter>() ? p.find<BrightnessFilter>()->getBrightness() : 0);
+    m_claritySlider->setValue(p.find<ClarityFilter>() ? p.find<ClarityFilter>()->getClarity() : 0);
+    m_contrastSlider->setValue(p.find<ContrastFilter>() ? p.find<ContrastFilter>()->getContrast() : 0);
+    m_fadeSlider->setValue(p.find<FadeFilter>() ? p.find<FadeFilter>()->getFade() : 0);
+    m_gammaSlider->setValue(p.find<GammaFilter>() ? p.find<GammaFilter>()->getGamma() : 0);
+    m_grainSlider->setValue(p.find<GrainFilter>() ? p.find<GrainFilter>()->getGrain() : 0);
+    m_highlightSlider->setValue(p.find<HighlightFilter>() ? p.find<HighlightFilter>()->getHighlight() : 0);
+    m_saturationSlider->setValue(p.find<SaturationFilter>() ? p.find<SaturationFilter>()->getSaturation() : 0);
+    m_shadowSlider->setValue(p.find<ShadowFilter>() ? p.find<ShadowFilter>()->getShadow() : 0);
+    m_sharpenSlider->setValue(p.find<SharpenFilter>() ? p.find<SharpenFilter>()->getSharpness() : 0);
+    m_splitToningSlider->setValue(p.find<SplitToningFilter>() ? p.find<SplitToningFilter>()->getSplitToning() : 0);
+    m_tintSlider->setValue(p.find<TintFilter>() ? p.find<TintFilter>()->getTint() : 0);
+    m_vibranceSlider->setValue(p.find<VibranceFilter>() ? p.find<VibranceFilter>()->getVibrance() : 0);
+    m_vignetteSlider->setValue(p.find<VignetteFilter>() ? p.find<VignetteFilter>()->getVignette() : 0);
 
-     if (m_bwCheckbox)
-         m_bwCheckbox->setChecked(p.find<BWFilter>() != nullptr);
+    if (m_bwCheckbox)
+        m_bwCheckbox->setChecked(p.find<BWFilter>() != nullptr);
 
-     m_isUpdatingSlider = false;
+    m_isUpdatingSlider = false;
 
 }
 
@@ -1377,7 +1379,7 @@ void MainWindow::handleMoveLayer(int from, int to)
     if (from == to)
         return;
 
-    auto command = std::make_unique<MoveLayerCommand>(m_layerManager, from, to);
+    auto command = std::make_unique<ReorderLayerCommand>(m_layerManager, from, to);
     undoRedoStack.push(std::move(command));
     updateUndoRedoButtons();
 }
@@ -1515,5 +1517,4 @@ void MainWindow::saveAs() {
         return;
     }
 }
-
 

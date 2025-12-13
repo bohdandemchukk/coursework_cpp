@@ -71,6 +71,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     layercommands.h layercommands.cpp
     layermanager.h layermanager.cpp
     layerspanel.h layerspanel.cpp
+    movetool.h movetool.cpp
 
 
 

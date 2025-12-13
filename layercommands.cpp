@@ -36,20 +36,19 @@ void RemoveLayerCommand::undo()
     }
 }
 
-MoveLayerCommand::MoveLayerCommand(LayerManager &manager, int from, int to)
+ReorderLayerCommand::ReorderLayerCommand(LayerManager &manager, int from, int to)
     : m_manager(manager), m_from(from), m_to(to)
 {
 }
 
-void MoveLayerCommand::execute()
+void ReorderLayerCommand::execute()
 {
     if (m_manager.moveLayer(m_from, m_to))
     {
         std::swap(m_from, m_to);
     }
 }
-
-void MoveLayerCommand::undo()
+void ReorderLayerCommand::undo()
 {
     m_manager.moveLayer(m_from, m_to);
     std::swap(m_from, m_to);
@@ -131,6 +130,55 @@ void SetLayerBlendModeCommand::undo()
     layer->setBlendMode(m_old);
     m_manager.notifyLayerChanged();
 }
+
+MoveLayerCommand::MoveLayerCommand(LayerManager& manager, int index, QPointF oldOffset, QPointF newOffset)
+    : m_manager(manager), m_index(index), m_oldOffset(oldOffset), m_newOffset(newOffset)
+{}
+
+void MoveLayerCommand::execute()
+{
+    auto layer = std::dynamic_pointer_cast<PixelLayer>(m_manager.layerAt(m_index));
+    if (!layer)
+        return;
+
+    layer->setOffset(m_newOffset);
+    m_manager.notifyLayerChanged();
+}
+
+void MoveLayerCommand::undo()
+{
+    auto layer = std::dynamic_pointer_cast<PixelLayer>(m_manager.layerAt(m_index));
+    if (!layer)
+        return;
+
+    layer->setOffset(m_oldOffset);
+    m_manager.notifyLayerChanged();
+}
+
+ScaleLayerCommand::ScaleLayerCommand(LayerManager& manager, int index, float oldScale, float newScale)
+    : m_manager(manager), m_index(index), m_oldScale(oldScale), m_newScale(newScale)
+{}
+
+void ScaleLayerCommand::execute()
+{
+    auto layer = std::dynamic_pointer_cast<PixelLayer>(m_manager.layerAt(m_index));
+    if (!layer)
+        return;
+
+    layer->setScale(m_newScale);
+    m_manager.notifyLayerChanged();
+}
+
+void ScaleLayerCommand::undo()
+{
+    auto layer = std::dynamic_pointer_cast<PixelLayer>(m_manager.layerAt(m_index));
+    if (!layer)
+        return;
+
+    layer->setScale(m_oldScale);
+    m_manager.notifyLayerChanged();
+}
+
 
 
 ChangeLayerPipelineCommand::ChangeLayerPipelineCommand(

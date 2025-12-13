@@ -10,8 +10,11 @@
 #include <QRect>
 #include <QGraphicsPixmapItem>
 #include <QtGlobal>
+#include <QPainter>
+#include <QVector>
 #include <memory>
 #include "command.h"
+#include "layermanager.h"
 
 
 class Tool;
@@ -60,6 +63,9 @@ public:
 
     void setActiveTool(Tool* tool) { m_activeTool = tool; }
 
+    void setLayerManager(LayerManager* manager) { m_layerManager = manager; }
+
+
     QPoint mapToImage(const QPoint& viewPos) const;
 
 
@@ -76,9 +82,18 @@ protected:
     void mousePressEvent(QMouseEvent *event) override;
     void mouseMoveEvent(QMouseEvent *event) override;
     void mouseReleaseEvent(QMouseEvent *event) override;
+    void drawForeground(QPainter *painter, const QRectF &rect) override;
+
 
 
 private:
+
+    enum class DragMode { None, Move, Scale };
+
+    QRectF activeLayerBounds() const;
+    QVector<QRectF> handleRects(const QRectF& bounds) const;
+    int hitHandle(const QPointF& scenePos) const;
+    std::shared_ptr<PixelLayer> hitTestLayers(const QPointF& scenePos, int& outIndex) const;
 
     QPixmap m_pixmap{};
 
@@ -91,6 +106,17 @@ private:
     QRubberBand *rubberBand{nullptr};
 
     Tool* m_activeTool {nullptr};
+
+    LayerManager* m_layerManager {nullptr};
+
+    DragMode m_dragMode {DragMode::None};
+    int m_dragHandle {-1};
+    int m_dragLayerIndex {-1};
+    QPointF m_dragStartScene {};
+    QPointF m_initialOffset {};
+    float m_initialScale {1.0f};
+    QPointF m_initialCenter {};
+
 
 
 };

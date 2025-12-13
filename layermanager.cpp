@@ -215,6 +215,9 @@ QImage LayerManager::composite() const
     QImage pendingImg;
     float pendingOpacity = 1.0f;
     BlendMode pendingBlend = BlendMode::Normal;
+    QPointF pendingOffset {0.0, 0.0};
+    float pendingScale = 1.0f;
+
 
     auto flushPending = [&]() {
         if (!hasPending) return;
@@ -222,7 +225,11 @@ QImage LayerManager::composite() const
         QPainter painter(&result);
         painter.setOpacity(pendingOpacity);
         painter.setCompositionMode(toQtMode(pendingBlend));
+        painter.save();
+        painter.translate(pendingOffset);
+        painter.scale(pendingScale, pendingScale);
         painter.drawImage(QPoint(0,0), pendingImg);
+        painter.restore();
 
         hasPending = false;
         pendingImg = QImage();
@@ -247,6 +254,8 @@ QImage LayerManager::composite() const
 
             pendingOpacity = pixel->opacity();
             pendingBlend   = pixel->blendMode();
+            pendingOffset  = pixel->offset();
+            pendingScale   = pixel->scale();
             hasPending = true;
         }
         else if (layer->type() == LayerType::Adjustment)

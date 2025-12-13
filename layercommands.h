@@ -4,6 +4,7 @@
 #include <memory>
 
 #include "command.h"
+#include <QPointF>
 #include "layermanager.h"
 
 class AddLayerCommand : public Command
@@ -35,10 +36,10 @@ private:
     std::shared_ptr<Layer> m_removedLayer;
 };
 
-class MoveLayerCommand : public Command
+class ReorderLayerCommand : public Command
 {
 public:
-    MoveLayerCommand(LayerManager &manager, int from, int to);
+    ReorderLayerCommand(LayerManager &manager, int from, int to);
 
     void execute() override;
     void undo() override;
@@ -48,6 +49,37 @@ private:
     int m_from;
     int m_to;
 };
+
+class MoveLayerCommand : public Command
+{
+public:
+    MoveLayerCommand(LayerManager& manager, int index, QPointF oldOffset, QPointF newOffset);
+
+    void execute() override;
+    void undo() override;
+
+private:
+    LayerManager& m_manager;
+    int m_index;
+    QPointF m_oldOffset;
+    QPointF m_newOffset;
+};
+
+class ScaleLayerCommand : public Command
+{
+public:
+    ScaleLayerCommand(LayerManager& manager, int index, float oldScale, float newScale);
+
+    void execute() override;
+    void undo() override;
+
+private:
+    LayerManager& m_manager;
+    int m_index;
+    float m_oldScale;
+    float m_newScale;
+};
+
 
 class SetLayerVisibilityCommand : public Command
 {
