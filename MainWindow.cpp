@@ -17,6 +17,8 @@
 #include <QColorDialog>
 #include <QSpinBox>
 #include <QTransform>
+#include <QFileInfo>
+#include <QPainter>
 #include <algorithm>
 #include <QToolButton>
 #include <QMessageBox>
@@ -380,6 +382,7 @@ void MainWindow::createLayersDock()
     connect(m_layersPanel, &LayersPanel::activeLayerChanged, this, &MainWindow::selectActiveLayer);
     connect(m_layersPanel, &LayersPanel::addLayerRequested, this, &MainWindow::handleAddLayer);
     connect(m_layersPanel, &LayersPanel::addAdjustmentLayerRequested, this, &MainWindow::handleAddAdjustmentLayer);
+    connect(m_layersPanel, &LayersPanel::addImageLayerRequested, this, &MainWindow::handleAddImageLayer);
     connect(m_layersPanel, &LayersPanel::deleteLayerRequested, this, &MainWindow::handleDeleteLayer);
     connect(m_layersPanel, &LayersPanel::moveLayerRequested, this, &MainWindow::handleMoveLayer);
     connect(m_layersPanel, &LayersPanel::visibilityToggled, this, &MainWindow::handleVisibilityChanged);
@@ -1278,6 +1281,63 @@ void MainWindow::handleAddAdjustmentLayer()
     m_layerManager.setActiveLayerIndex(insertIndex);
 
     syncFilterUIFromActiveLayer();
+    updateUndoRedoButtons();
+}
+
+QImage MainWindow::prepareImageForCanvas(const QImage& source, const QSize& canvasSize) const
+{
+    QImage converted = source.convertToFormat(QImage::Format_ARGB32);
+    if (!canvasSize.isValid())
+        return converted;
+
+    if (converted.size() == canvasSize)
+        return converted;
+
+    QImage result(canvasSize, QImage::Format_ARGB32);
+    result.fill(Qt::transparent);
+
+    QImage scaled = converted.scaled(canvasSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+    const QPoint topLeft((canvasSize.width() - scaled.width()) / 2,
+                         (canvasSize.height() - scaled.height()) / 2);
+
+    QPainter painter(&result);
+    painter.drawImage(topLeft, scaled);
+
+    return result;
+}
+
+void MainWindow::handleAddImageLayer()
+{
+    const QString filePath = QFileDialog::getOpenFileName(
+        this,
+        tr("Add Image Layer"),
+        QString(),
+        tr("Images (*.png *.jpg *.jpeg *.webp *.bmp)")
+        );
+
+    if (filePath.isEmpty())
+        return;
+
+    if (!m_layerManager.canvasSize().isValid())
+        return;
+
+    QImage loaded(filePath);
+    if (loaded.isNull())
+        return;
+
+    const QImage prepared = prepareImageForCanvas(loaded, m_layerManager.canvasSize());
+
+    const QString baseName = QFileInfo(filePath).completeBaseName();
+    const QString layerName = baseName.isEmpty()
+                                  ? tr("Image Layer %1").arg(m_layerManager.layerCount() + 1)
+                                  : baseName;
+
+    const int insertIndex = m_layerManager.activeLayerIndex() + 1;
+    auto layer = std::make_shared<PixelLayer>(layerName, prepared);
+    auto command = std::make_unique<AddLayerCommand>(m_layerManager, layer, insertIndex);
+    undoRedoStack.push(std::move(command));
+
+    m_layerManager.setActiveLayerIndex(insertIndex);
     updateUndoRedoButtons();
 }
 

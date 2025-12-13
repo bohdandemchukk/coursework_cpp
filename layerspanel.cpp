@@ -22,12 +22,14 @@ LayersPanel::LayersPanel(QWidget* parent)
     auto* buttonsLayout = new QHBoxLayout();
     m_addButton = new QPushButton(tr("Add"), this);
     m_addAdjButton = new QPushButton("Add Adjustment");
+    m_addImageButton = new QPushButton(tr("Add Image Layer"), this);
     m_deleteButton = new QPushButton(tr("Delete"), this);
     m_moveUpButton = new QPushButton(tr("Up"), this);
     m_moveDownButton = new QPushButton(tr("Down"), this);
 
     buttonsLayout->addWidget(m_addButton);
     buttonsLayout->addWidget(m_addAdjButton);
+    buttonsLayout->addWidget(m_addImageButton);
     buttonsLayout->addWidget(m_deleteButton);
     buttonsLayout->addWidget(m_moveUpButton);
     buttonsLayout->addWidget(m_moveDownButton);
@@ -35,7 +37,7 @@ LayersPanel::LayersPanel(QWidget* parent)
 
     connect(m_addButton, &QPushButton::clicked, this, &LayersPanel::onAddLayer);
     connect(m_addAdjButton, &QPushButton::clicked, this, &LayersPanel::addAdjustmentLayerRequested);
-
+    connect(m_addImageButton, &QPushButton::clicked, this, &LayersPanel::onAddImageLayer);
     connect(m_deleteButton, &QPushButton::clicked, this, &LayersPanel::onDeleteLayer);
     connect(m_moveUpButton, &QPushButton::clicked, this, &LayersPanel::onMoveUp);
     connect(m_moveDownButton, &QPushButton::clicked, this, &LayersPanel::onMoveDown);
@@ -275,3 +277,9 @@ void LayersPanel::onOpacitySpinChanged(double value)
         emit opacityChanged(managerIndex, static_cast<float>(value));
     }
 }
+
+void LayersPanel::onAddImageLayer()
+{
+    emit addImageLayerRequested();
+}
+

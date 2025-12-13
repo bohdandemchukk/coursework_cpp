@@ -15,6 +15,8 @@
 #include <QSpinBox>
 #include <QPushButton>
 #include <QToolButton>
+#include <QImage>
+#include <QSize>
 
 #include "layermanager.h"
 #include "MyGraphicsView.h"
@@ -180,6 +182,7 @@ private:
     void changeLayerFilters(std::function<void(FilterPipeline&)> edit);
     void handleAddLayer();
     void handleAddAdjustmentLayer();
+    void handleAddImageLayer();
     void handleDeleteLayer(int managerIndex);
     void handleMoveLayer(int from, int to);
     void handleVisibilityChanged(int managerIndex, bool visible);
@@ -187,6 +190,8 @@ private:
 
     void changeFilterInt(int* target, int newValue);
     void changeFilterBool(bool* target, bool newValue);
+
+    QImage prepareImageForCanvas(const QImage& source, const QSize& canvasSize) const;
 
 private slots:
 
