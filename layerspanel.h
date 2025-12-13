@@ -24,6 +24,7 @@ public:
 signals:
     void activeLayerChanged(int managerIndex);
     void addLayerRequested();
+    void addAdjustmentLayerRequested();
     void deleteLayerRequested(int managerIndex);
     void moveLayerRequested(int fromIndex, int toIndex);
     void visibilityToggled(int managerIndex, bool visible);
@@ -52,6 +53,7 @@ private:
     QSlider* m_opacitySlider {nullptr};
     QDoubleSpinBox* m_opacitySpin {nullptr};
     QPushButton* m_addButton {nullptr};
+    QPushButton* m_addAdjButton {nullptr};
     QPushButton* m_deleteButton {nullptr};
     QPushButton* m_moveUpButton {nullptr};
     QPushButton* m_moveDownButton {nullptr};

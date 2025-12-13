@@ -28,10 +28,12 @@ public:
     void setCanvasSize(const QSize &size);
     QSize canvasSize() const;
 
-    int activeLayerIndex() const;
-    void setActiveLayerIndex(int index);
     std::shared_ptr<Layer> activeLayer();
     std::shared_ptr<const Layer> activeLayer() const;
+
+
+    int activeLayerIndex() const;
+    void setActiveLayerIndex(int index);
 
     void notifyLayerChanged();
 

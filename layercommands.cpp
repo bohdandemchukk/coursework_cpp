@@ -148,7 +148,7 @@ ChangeLayerPipelineCommand::ChangeLayerPipelineCommand(
 
 void ChangeLayerPipelineCommand::execute()
 {
-    auto layer = m_manager.layerAt(m_index);
+    auto layer = std::dynamic_pointer_cast<AdjustmentLayer>(m_manager.layerAt(m_index));
     if (!layer) return;
 
     layer->pipeline() = m_after;
@@ -157,7 +157,7 @@ void ChangeLayerPipelineCommand::execute()
 
 void ChangeLayerPipelineCommand::undo()
 {
-    auto layer = m_manager.layerAt(m_index);
+    auto layer = std::dynamic_pointer_cast<AdjustmentLayer>(m_manager.layerAt(m_index));
     if (!layer) return;
 
     layer->pipeline() = m_before;

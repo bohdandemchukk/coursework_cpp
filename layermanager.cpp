@@ -2,6 +2,19 @@
 
 #include <QPainter>
 #include <QPoint>
+#include <memory>
+
+namespace {
+QPainter::CompositionMode toQtMode(BlendMode mode)
+{
+    switch (mode) {
+    case BlendMode::Multiply: return QPainter::CompositionMode_Multiply;
+    case BlendMode::Screen:   return QPainter::CompositionMode_Screen;
+    case BlendMode::Overlay:  return QPainter::CompositionMode_Overlay;
+    default:                  return QPainter::CompositionMode_SourceOver;
+    }
+}
+}
 
 LayerManager::LayerManager(const QSize &canvasSize, QImage::Format format)
     : m_canvasSize(canvasSize), m_format(format)
@@ -114,15 +127,6 @@ void LayerManager::setOnChanged(ChangeCallback callback)
     m_onChanged = std::move(callback);
 }
 
-static QPainter::CompositionMode toQtMode(BlendMode mode)
-{
-    switch (mode) {
-    case BlendMode::Multiply: return QPainter::CompositionMode_Multiply;
-    case BlendMode::Screen:   return QPainter::CompositionMode_Screen;
-    case BlendMode::Overlay:  return QPainter::CompositionMode_Overlay;
-    default:                  return QPainter::CompositionMode_SourceOver;
-    }
-}
 
 QImage LayerManager::composite() const
 {
@@ -132,21 +136,30 @@ QImage LayerManager::composite() const
     QImage result(m_canvasSize, m_format);
     result.fill(Qt::transparent);
 
-    QPainter painter(&result);
-    painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
-
     for (const auto &layer : m_layers)
     {
         if (!layer || !layer->isVisible())
             continue;
 
-        QImage img = layer->image();
-        QImage processed = layer->pipeline().process(img);
-        painter.setOpacity(layer->opacity());
-        painter.setCompositionMode(toQtMode(layer->blendMode()));
-        painter.drawImage(QPoint(0,0), processed);
 
+        if (layer->type() == LayerType::Pixel)
+        {
+            auto pixel = std::static_pointer_cast<PixelLayer>(layer);
+            QPainter painter(&result);
+            painter.setOpacity(pixel->opacity());
+            painter.setCompositionMode(toQtMode(pixel->blendMode()));
+            painter.drawImage(QPoint(0, 0), pixel->image());
+        }
+        else if (layer->type() == LayerType::Adjustment)
+        {
+            auto adjustment = std::static_pointer_cast<AdjustmentLayer>(layer);
+            QImage filtered = adjustment->pipeline().process(result);
 
+            QPainter painter(&result);
+            painter.setOpacity(adjustment->opacity());
+            painter.setCompositionMode(toQtMode(adjustment->blendMode()));
+            painter.drawImage(QPoint(0, 0), filtered);
+        }
     }
 
     return result;

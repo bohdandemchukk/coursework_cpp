@@ -171,12 +171,15 @@ private:
     QImage compositeWithFilters();
     QImage* activeLayerImage();
     void selectActiveLayer(int index);
+    bool isActiveAdjustmentLayer() const;
+    void setFilterControlsEnabled(bool enabled);
     void rebuildPipeline();
     void updateUndoRedoButtons();
 
 
     void changeLayerFilters(std::function<void(FilterPipeline&)> edit);
     void handleAddLayer();
+    void handleAddAdjustmentLayer();
     void handleDeleteLayer(int managerIndex);
     void handleMoveLayer(int from, int to);
     void handleVisibilityChanged(int managerIndex, bool visible);

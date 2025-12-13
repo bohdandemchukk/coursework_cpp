@@ -20,8 +20,10 @@
 #include <algorithm>
 #include <QToolButton>
 #include <QMessageBox>
-#include "cropcommand.h"
 
+#include <memory>
+
+#include "cropcommand.h"
 #include "layercommands.h"
 #include "rotatefilter.h"
 #include "flipfilter.h"
@@ -377,6 +379,7 @@ void MainWindow::createLayersDock()
 
     connect(m_layersPanel, &LayersPanel::activeLayerChanged, this, &MainWindow::selectActiveLayer);
     connect(m_layersPanel, &LayersPanel::addLayerRequested, this, &MainWindow::handleAddLayer);
+    connect(m_layersPanel, &LayersPanel::addAdjustmentLayerRequested, this, &MainWindow::handleAddAdjustmentLayer);
     connect(m_layersPanel, &LayersPanel::deleteLayerRequested, this, &MainWindow::handleDeleteLayer);
     connect(m_layersPanel, &LayersPanel::moveLayerRequested, this, &MainWindow::handleMoveLayer);
     connect(m_layersPanel, &LayersPanel::visibilityToggled, this, &MainWindow::handleVisibilityChanged);
@@ -539,7 +542,7 @@ void MainWindow::createFilterSections()
                 {
                     if (m_isUpdatingSlider) return;
 
-                    auto layer = m_layerManager.activeLayer();
+                    auto layer = std::dynamic_pointer_cast<AdjustmentLayer>(m_layerManager.activeLayer());
                     if (!layer) return;
 
                     int index = m_layerManager.activeLayerIndex();
@@ -547,7 +550,7 @@ void MainWindow::createFilterSections()
                     FilterPipeline before = layer->pipeline();
                     FilterPipeline after  = before;
 
-                    apply(after, value); // ⬅️ ключовий момент
+                    apply(after, value);
 
                     auto cmd = std::make_unique<ChangeLayerPipelineCommand>(
                         m_layerManager,
@@ -655,11 +658,12 @@ void MainWindow::createFilterSections()
                 if (m_isUpdatingSlider) return;
 
                 auto layer = m_layerManager.activeLayer();
-                if (!layer) return;
+                auto adj = std::dynamic_pointer_cast<AdjustmentLayer>(layer);
+                if (!adj) return;
 
                 int index = m_layerManager.activeLayerIndex();
 
-                FilterPipeline before = layer->pipeline();
+                FilterPipeline before = adj->pipeline();
                 FilterPipeline after  = before;
 
                 if (checked)
@@ -676,7 +680,9 @@ void MainWindow::createFilterSections()
 
                 undoRedoStack.push(std::move(cmd));
                 updateUndoRedoButtons();
-            });
+            }
+            );
+
 
 
     connect(rotateRBtn, &QPushButton::clicked, this, &MainWindow::rotateRight);
@@ -893,7 +899,7 @@ void MainWindow::openImage()
         updateComposite();
     });
 
-    auto baseLayer = std::make_shared<Layer>(tr("Background"), img.convertToFormat(QImage::Format_ARGB32));
+    auto baseLayer = std::make_shared<PixelLayer>(tr("Background"), img.convertToFormat(QImage::Format_ARGB32));
     m_layerManager.addLayer(baseLayer);
     m_layerManager.setActiveLayerIndex(0);
     if (m_graphicsView) {
@@ -1072,7 +1078,7 @@ void MainWindow::rebuildPipeline()
 
 void MainWindow::changeLayerFilters(std::function<void(FilterPipeline&)> edit)
 {
-    auto layer = m_layerManager.activeLayer();
+    auto layer = std::dynamic_pointer_cast<AdjustmentLayer>(m_layerManager.activeLayer());
     if (!layer) return;
 
     int index = m_layerManager.activeLayerIndex();
@@ -1094,94 +1100,67 @@ void MainWindow::changeLayerFilters(std::function<void(FilterPipeline&)> edit)
 
 void MainWindow::syncFilterUIFromActiveLayer()
 {
-    auto layer = m_layerManager.activeLayer();
-    if (!layer) return;
-
+     auto layer = std::dynamic_pointer_cast<AdjustmentLayer>(m_layerManager.activeLayer());
     m_isUpdatingSlider = true;
 
-    auto& p = layer->pipeline();
+     if (!layer)
+     {
+         setFilterControlsEnabled(false);
+         if (m_bwCheckbox) m_bwCheckbox->setChecked(false);
+         if (m_exposureSlider)   m_exposureSlider->setValue(0);
+         if (m_contrastSlider)   m_contrastSlider->setValue(0);
+         if (m_brightnessSlider) m_brightnessSlider->setValue(0);
+         if (m_highlightSlider)  m_highlightSlider->setValue(0);
+         if (m_shadowSlider)     m_shadowSlider->setValue(0);
+         if (m_claritySlider)    m_claritySlider->setValue(0);
+         if (m_temperatureSlider) m_temperatureSlider->setValue(0);
+         if (m_tintSlider)        m_tintSlider->setValue(0);
+         if (m_saturationSlider)  m_saturationSlider->setValue(0);
+         if (m_vibranceSlider)    m_vibranceSlider->setValue(0);
+         if (m_splitToningSlider) m_splitToningSlider->setValue(0);
+         if (m_vignetteSlider)    m_vignetteSlider->setValue(0);
+         if (m_grainSlider)       m_grainSlider->setValue(0);
+         if (m_fadeSlider)        m_fadeSlider->setValue(0);
+         if (m_sharpenSlider)     m_sharpenSlider->setValue(0);
+         if (m_blurSlider)        m_blurSlider->setValue(0);
+         if (m_gammaSlider)       m_gammaSlider->setValue(0);
+         m_isUpdatingSlider = false;
+         return;
+     }
 
-    m_exposureSlider->setValue(
-        p.find<ExposureFilter>() ? p.find<ExposureFilter>()->getExposure() : 0
-        );
+     setFilterControlsEnabled(true);
+     auto& p = layer->pipeline();
 
-    m_temperatureSlider->setValue(
-        p.find<TemperatureFilter>() ? p.find<TemperatureFilter>()->getTemperature() : 0
-        );
+     m_exposureSlider->setValue(p.find<ExposureFilter>() ? p.find<ExposureFilter>()->getExposure() : 0);
+     m_temperatureSlider->setValue(p.find<TemperatureFilter>() ? p.find<TemperatureFilter>()->getTemperature() : 0);
+     m_blurSlider->setValue(p.find<BlurFilter>() ? p.find<BlurFilter>()->getBlur() : 0);
+     m_brightnessSlider->setValue(p.find<BrightnessFilter>() ? p.find<BrightnessFilter>()->getBrightness() : 0);
+     m_claritySlider->setValue(p.find<ClarityFilter>() ? p.find<ClarityFilter>()->getClarity() : 0);
+     m_contrastSlider->setValue(p.find<ContrastFilter>() ? p.find<ContrastFilter>()->getContrast() : 0);
+     m_fadeSlider->setValue(p.find<FadeFilter>() ? p.find<FadeFilter>()->getFade() : 0);
+     m_gammaSlider->setValue(p.find<GammaFilter>() ? p.find<GammaFilter>()->getGamma() : 0);
+     m_grainSlider->setValue(p.find<GrainFilter>() ? p.find<GrainFilter>()->getGrain() : 0);
+     m_highlightSlider->setValue(p.find<HighlightFilter>() ? p.find<HighlightFilter>()->getHighlight() : 0);
+     m_saturationSlider->setValue(p.find<SaturationFilter>() ? p.find<SaturationFilter>()->getSaturation() : 0);
+     m_shadowSlider->setValue(p.find<ShadowFilter>() ? p.find<ShadowFilter>()->getShadow() : 0);
+     m_sharpenSlider->setValue(p.find<SharpenFilter>() ? p.find<SharpenFilter>()->getSharpness() : 0);
+     m_splitToningSlider->setValue(p.find<SplitToningFilter>() ? p.find<SplitToningFilter>()->getSplitToning() : 0);
+     m_tintSlider->setValue(p.find<TintFilter>() ? p.find<TintFilter>()->getTint() : 0);
+     m_vibranceSlider->setValue(p.find<VibranceFilter>() ? p.find<VibranceFilter>()->getVibrance() : 0);
+     m_vignetteSlider->setValue(p.find<VignetteFilter>() ? p.find<VignetteFilter>()->getVignette() : 0);
 
-    m_blurSlider->setValue(
-        p.find<BlurFilter>() ? p.find<BlurFilter>()->getBlur() : 0
-        );
+     if (m_bwCheckbox)
+         m_bwCheckbox->setChecked(p.find<BWFilter>() != nullptr);
 
-    m_brightnessSlider->setValue(
-        p.find<BrightnessFilter>() ? p.find<BrightnessFilter>()->getBrightness() : 0
-        );
+     m_isUpdatingSlider = false;
 
-    m_claritySlider->setValue(
-        p.find<ClarityFilter>() ? p.find<ClarityFilter>()->getClarity() : 0
-        );
-
-    m_contrastSlider->setValue(
-        p.find<ContrastFilter>() ? p.find<ContrastFilter>()->getContrast() : 0
-        );
-
-    m_fadeSlider->setValue(
-        p.find<FadeFilter>() ? p.find<FadeFilter>()->getFade() : 0
-        );
-
-    m_gammaSlider->setValue(
-        p.find<GammaFilter>() ? p.find<GammaFilter>()->getGamma() : 0
-        );
-
-    m_grainSlider->setValue(
-        p.find<GrainFilter>() ? p.find<GrainFilter>()->getGrain() : 0
-        );
-
-    m_highlightSlider->setValue(
-        p.find<HighlightFilter>() ? p.find<HighlightFilter>()->getHighlight() : 0
-        );
-
-    m_saturationSlider->setValue(
-        p.find<SaturationFilter>() ? p.find<SaturationFilter>()->getSaturation() : 0
-        );
-
-    m_shadowSlider->setValue(
-        p.find<ShadowFilter>() ? p.find<ShadowFilter>()->getShadow() : 0
-        );
-
-    m_sharpenSlider->setValue(
-        p.find<SharpenFilter>() ? p.find<SharpenFilter>()->getSharpness() : 0
-        );
-
-    m_splitToningSlider->setValue(
-        p.find<SplitToningFilter>() ? p.find<SplitToningFilter>()->getSplitToning() : 0
-        );
-
-    m_tintSlider->setValue(
-        p.find<TintFilter>() ? p.find<TintFilter>()->getTint() : 0
-        );
-
-    m_vibranceSlider->setValue(
-        p.find<VibranceFilter>() ? p.find<VibranceFilter>()->getVibrance() : 0
-        );
-
-    m_vignetteSlider->setValue(
-        p.find<VignetteFilter>() ? p.find<VignetteFilter>()->getVignette() : 0
-        );
-
-
-    m_bwCheckbox->setChecked(
-        p.find<BWFilter>() != nullptr
-        );
-
-    m_isUpdatingSlider = false;
 }
 
 
 
 QImage* MainWindow::activeLayerImage()
 {
-    auto layer = m_layerManager.activeLayer();
+    auto layer = std::dynamic_pointer_cast<PixelLayer>(m_layerManager.activeLayer());
     if (!layer)
         return nullptr;
     return &layer->image();
@@ -1198,6 +1177,36 @@ void MainWindow::selectActiveLayer(int index)
     if (m_eraserTool) m_eraserTool->setTargetImage(target);
 }
 
+bool MainWindow::isActiveAdjustmentLayer() const
+{
+    auto layer = m_layerManager.activeLayer();
+    auto adj = std::dynamic_pointer_cast<const AdjustmentLayer>(layer);
+    return adj != nullptr;
+}
+
+void MainWindow::setFilterControlsEnabled(bool enabled)
+{
+    const auto setEnabledIf = [enabled](QWidget* w) { if (w) w->setEnabled(enabled); };
+    setEnabledIf(m_exposureSlider);
+    setEnabledIf(m_contrastSlider);
+    setEnabledIf(m_brightnessSlider);
+    setEnabledIf(m_highlightSlider);
+    setEnabledIf(m_shadowSlider);
+    setEnabledIf(m_claritySlider);
+    setEnabledIf(m_temperatureSlider);
+    setEnabledIf(m_tintSlider);
+    setEnabledIf(m_saturationSlider);
+    setEnabledIf(m_vibranceSlider);
+    setEnabledIf(m_splitToningSlider);
+    setEnabledIf(m_vignetteSlider);
+    setEnabledIf(m_grainSlider);
+    setEnabledIf(m_fadeSlider);
+    setEnabledIf(m_sharpenSlider);
+    setEnabledIf(m_blurSlider);
+    setEnabledIf(m_gammaSlider);
+    setEnabledIf(m_bwCheckbox);
+}
+
 QImage MainWindow::compositeWithFilters()
 {
     QImage base = m_layerManager.composite();
@@ -1211,7 +1220,7 @@ QImage MainWindow::compositeWithFilters()
 
 void MainWindow::updateActiveLayerImage(const QImage &image)
 {
-    auto active = m_layerManager.activeLayer();
+    auto active = std::dynamic_pointer_cast<PixelLayer>(m_layerManager.activeLayer());
     if (!active)
         return;
 
@@ -1240,12 +1249,38 @@ void MainWindow::handleAddLayer()
     newImage.fill(Qt::transparent);
     QString name = tr("Layer %1").arg(m_layerManager.layerCount() + 1);
 
-    auto layer = std::make_shared<Layer>(name, newImage);
+    auto layer = std::make_shared<PixelLayer>(name, newImage);
     auto command = std::make_unique<AddLayerCommand>(m_layerManager, layer);
     undoRedoStack.push(std::move(command));
     m_layerManager.setActiveLayerIndex(m_layerManager.layerCount() - 1);
     updateUndoRedoButtons();
 }
+
+void MainWindow::handleAddAdjustmentLayer()
+{
+    if (!m_layerManager.canvasSize().isValid())
+        return;
+
+    QString name = tr("Adjustment %1")
+                       .arg(m_layerManager.layerCount() + 1);
+
+    auto adjLayer = std::make_shared<AdjustmentLayer>(name);
+
+    int insertIndex = m_layerManager.activeLayerIndex() + 1;
+
+    auto cmd = std::make_unique<AddLayerCommand>(
+        m_layerManager,
+        adjLayer,
+        insertIndex
+        );
+
+    undoRedoStack.push(std::move(cmd));
+    m_layerManager.setActiveLayerIndex(insertIndex);
+
+    syncFilterUIFromActiveLayer();
+    updateUndoRedoButtons();
+}
+
 
 void MainWindow::handleDeleteLayer(int managerIndex)
 {
