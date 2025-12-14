@@ -1,5 +1,5 @@
 #include "filterpipeline.h"
-
+#include <QDebug>
 FilterPipeline::FilterPipeline() {}
 
 FilterPipeline::FilterPipeline(const FilterPipeline& other)
@@ -16,6 +16,8 @@ FilterPipeline& FilterPipeline::operator=(const FilterPipeline& other)
     filters.clear();
     for (const auto& f : other.filters)
         filters.push_back(f->clone());
+
+    qDebug() << "Pipeline filters count:" << filters.size();
 
     return *this;
 }
@@ -43,6 +45,8 @@ QImage FilterPipeline::process(const QImage& src) const
 
     for (auto& filter : filters)
         img = filter->apply(img);
+
+    qDebug() << "Process filters:" << filters.size();
 
     return img.convertToFormat(QImage::Format_ARGB32_Premultiplied);
 }

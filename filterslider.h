@@ -25,6 +25,7 @@ public:
 
 signals:
     void sliderReleased(int value);
+    void valueChanged(int value);
 
 private:
     QPushButton* resetButton{};

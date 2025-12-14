@@ -81,20 +81,26 @@ private:
 };
 
 
-class AdjustmentLayer final : public Layer
-{
+class AdjustmentLayer : public Layer {
 public:
-    AdjustmentLayer(QString name,
-                    bool visible = true,
-                    float opacity = 1.0f);
+    explicit AdjustmentLayer(QString name,
+                             bool visible = true,
+                             float opacity = 1.0f);
 
-    LayerType type() const override { return LayerType::Adjustment; }
+    LayerType type() const override;
 
-    FilterPipeline& pipeline() { return m_pipeline; }
-    const FilterPipeline& pipeline() const { return m_pipeline; }
+    FilterPipeline& pipeline();
+    const FilterPipeline& pipeline() const;
+    const QImage& cachedProcess(const QImage& input) const;
+    void markDirty();
 
 private:
+    mutable bool m_dirty = true;
+    mutable QImage m_cached;
+
     FilterPipeline m_pipeline;
 };
+
+
 
 #endif // LAYER_H

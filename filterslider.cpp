@@ -42,6 +42,10 @@ FilterSlider::FilterSlider(const QString &name, int min, int max, int defaultVal
         emit sliderReleased(m_slider->value());
     });
 
+    connect(m_slider, &QSlider::valueChanged, this, [this]() {
+        emit valueChanged(m_slider->value());
+    });
+
     connect(resetButton, &QPushButton::clicked, this, [this]() {
         m_slider->setValue(m_defaultValue);
         m_spinBox->setValue(m_defaultValue);

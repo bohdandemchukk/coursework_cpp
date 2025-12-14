@@ -208,6 +208,10 @@ QImage LayerManager::composite() const
     if (!m_canvasSize.isValid())
         return QImage();
 
+    if (!m_dirty && !m_cachedComposite.isNull())
+        return m_cachedComposite;
+
+
     QImage result(m_canvasSize, m_format);
     result.fill(Qt::transparent);
 
@@ -219,38 +223,53 @@ QImage LayerManager::composite() const
     float pendingScale = 1.0f;
 
 
+    QPainter painter(&result);
+
     auto flushPending = [&]() {
         if (!hasPending) return;
-
-        QPainter painter(&result);
         painter.setOpacity(pendingOpacity);
         painter.setCompositionMode(toQtMode(pendingBlend));
         painter.save();
         painter.translate(pendingOffset);
         painter.scale(pendingScale, pendingScale);
-        painter.drawImage(QPoint(0,0), pendingImg);
+        painter.drawImage(QPoint(0,0), pendingImg);  
         painter.restore();
 
         hasPending = false;
         pendingImg = QImage();
     };
 
-    for (const auto& layer : m_layers)
+    for (auto it = m_layers.begin(); it != m_layers.end(); ++it)
     {
+        const auto& layer = *it;
         if (!layer || !layer->isVisible())
             continue;
 
         if (layer->type() == LayerType::Pixel)
         {
-
             flushPending();
 
             auto pixel = std::static_pointer_cast<PixelLayer>(layer);
 
+            bool willBeClipped = false;
+            for (auto it2 = std::next(it); it2 != m_layers.end(); ++it2) {
+                const auto& next = *it2;
+                if (!next || !next->isVisible())
+                    continue;
 
-            pendingImg = pixel->image();
-            if (pendingImg.format() != m_format)
-                pendingImg = pendingImg.convertToFormat(m_format);
+                if (next->type() == LayerType::Pixel)
+                    break;
+
+                if (next->type() == LayerType::Adjustment) {
+                    auto a = std::static_pointer_cast<AdjustmentLayer>(next);
+                    if (!a->isClipped())
+                        break;          // перший unclipped adjustment зупиняє “clipped stack”
+                    willBeClipped = true;
+                }
+            }
+
+            pendingImg = willBeClipped ? pixel->image().copy()
+                                       : pixel->image();
 
             pendingOpacity = pixel->opacity();
             pendingBlend   = pixel->blendMode();
@@ -264,26 +283,17 @@ QImage LayerManager::composite() const
 
             if (adj->isClipped())
             {
-
                 if (!hasPending) continue;
 
-                QImage adjusted = adj->pipeline().process(pendingImg);
-                if (adjusted.format() != pendingImg.format())
-                    adjusted = adjusted.convertToFormat(pendingImg.format());
+                const QImage& adjusted = adj->cachedProcess(pendingImg);
 
                 for (int y = 0; y < pendingImg.height(); ++y) {
                     QRgb* b = reinterpret_cast<QRgb*>(pendingImg.scanLine(y));
-                    QRgb* a = reinterpret_cast<QRgb*>(adjusted.scanLine(y));
+                    const QRgb* a = reinterpret_cast<const QRgb*>(adjusted.constScanLine(y));
 
                     for (int x = 0; x < pendingImg.width(); ++x) {
                         if (qAlpha(b[x]) == 0) continue;
-
-                        b[x] = blendPixel(
-                            b[x],
-                            a[x],
-                            adj->opacity(),
-                            adj->blendMode()
-                            );
+                        b[x] = blendPixel(b[x], a[x], adj->opacity(), adj->blendMode());
                     }
                 }
             }
@@ -291,30 +301,39 @@ QImage LayerManager::composite() const
             {
                 flushPending();
 
-                QImage base = result;
-                QImage adjusted = adj->pipeline().process(base);
+                QImage adjusted = adj->pipeline().process(result);
 
-                for (int y = 0; y < base.height(); ++y) {
-                    QRgb* b = reinterpret_cast<QRgb*>(base.scanLine(y));
-                    QRgb* a = reinterpret_cast<QRgb*>(adjusted.scanLine(y));
-                    QRgb* r = reinterpret_cast<QRgb*>(result.scanLine(y));
+                for (int y = 0; y < result.height(); ++y) {
+                    QRgb* b = reinterpret_cast<QRgb*>(result.scanLine(y));
+                    const QRgb* a = reinterpret_cast<const QRgb*>(adjusted.constScanLine(y));
 
-                    for (int x = 0; x < base.width(); ++x) {
-                        if (qAlpha(b[x]) == 0) { r[x] = b[x]; continue; }
-                        r[x] = blendPixel(b[x], a[x], adj->opacity(), adj->blendMode());
+                    for (int x = 0; x < result.width(); ++x) {
+                        if (qAlpha(b[x]) == 0) continue;
+                        b[x] = blendPixel(b[x], a[x], adj->opacity(), adj->blendMode());
                     }
                 }
             }
         }
     }
 
+
     flushPending();
-    return result;
+
+    m_cachedComposite = result;
+    m_dirty = false;
+    return m_cachedComposite;
+
+}
+
+void LayerManager::markDirty()
+{
+    m_dirty = true;
 }
 
 
-void LayerManager::notifyChanged() const
+void LayerManager::notifyChanged()
 {
+    m_dirty = true;
     if (m_onChanged)
         m_onChanged();
 }

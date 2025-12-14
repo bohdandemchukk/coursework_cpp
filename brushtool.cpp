@@ -133,7 +133,11 @@ std::unique_ptr<Command> BrushTool::endStroke()
         before,
         after,
         mask,
-        [this]() { requestUpdate(); }
+        [this]() {
+            if (m_view && m_view->layerManager())
+                m_view->layerManager()->notifyChanged();
+        }
+
         );
 }
 

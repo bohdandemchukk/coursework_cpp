@@ -64,4 +64,35 @@ AdjustmentLayer::AdjustmentLayer(QString name,
                                  bool visible,
                                  float opacity)
     : Layer(std::move(name), visible, opacity)
-{}
+{
+}
+
+LayerType AdjustmentLayer::type() const
+{
+    return LayerType::Adjustment;
+}
+
+FilterPipeline& AdjustmentLayer::pipeline()
+{
+    return m_pipeline;
+}
+
+const FilterPipeline& AdjustmentLayer::pipeline() const
+{
+    return m_pipeline;
+}
+
+
+void AdjustmentLayer::markDirty() { m_dirty = true; }
+
+const QImage& AdjustmentLayer::cachedProcess(const QImage& input) const
+{
+    if (!m_dirty && !m_cached.isNull())
+        return m_cached;
+
+    m_cached = pipeline().process(input);
+    m_dirty = false;
+    return m_cached;
+}
+
+

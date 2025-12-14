@@ -180,37 +180,6 @@ void ScaleLayerCommand::undo()
 }
 
 
-
-ChangeLayerPipelineCommand::ChangeLayerPipelineCommand(
-    LayerManager& manager,
-    int layerIndex,
-    FilterPipeline before,
-    FilterPipeline after
-    )
-    : m_manager(manager),
-    m_index(layerIndex),
-    m_before(std::move(before)),
-    m_after(std::move(after))
-{}
-
-void ChangeLayerPipelineCommand::execute()
-{
-    auto layer = std::dynamic_pointer_cast<AdjustmentLayer>(m_manager.layerAt(m_index));
-    if (!layer) return;
-
-    layer->pipeline() = m_after;
-    m_manager.notifyLayerChanged();
-}
-
-void ChangeLayerPipelineCommand::undo()
-{
-    auto layer = std::dynamic_pointer_cast<AdjustmentLayer>(m_manager.layerAt(m_index));
-    if (!layer) return;
-
-    layer->pipeline() = m_before;
-    m_manager.notifyLayerChanged();
-}
-
 SetLayerClippedCommand::SetLayerClippedCommand(LayerManager& mgr, int index, bool clipped)
         : m_mgr(mgr), m_index(index), m_new(clipped)
     {

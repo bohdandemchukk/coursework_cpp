@@ -71,7 +71,12 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     layercommands.h layercommands.cpp
     layermanager.h layermanager.cpp
     layerspanel.h layerspanel.cpp
-    movetool.h movetool.cpp
+
+    imageio.h imageio.cpp
+    filterspanel.h filterspanel.cpp
+    rotatelayercommand.h rotatelayercommand.cpp
+    fliplayercommand.h fliplayercommand.cpp
+    changelayerpipelinecommand.h changelayerpipelinecommand.cpp
 
 
 

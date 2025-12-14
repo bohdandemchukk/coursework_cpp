@@ -14,5 +14,5 @@ void EraserTool::paintStroke(QPainter& painter, const QPoint& from, const QPoint
     painter.setPen(pen);
     painter.drawLine(from, to);
 
-    painter.setCompositionMode(QPainter::CompositionMode_SourceOver); // важливо
+    painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
 }

@@ -130,27 +130,6 @@ private:
 #endif // LAYERCOMMANDS_H
 
 
-class ChangeLayerPipelineCommand : public Command
-{
-public:
-    ChangeLayerPipelineCommand(
-        LayerManager& manager,
-        int layerIndex,
-        FilterPipeline before,
-        FilterPipeline after
-        );
-
-    void execute() override;
-    void undo() override;
-
-private:
-    LayerManager& m_manager;
-    int m_index;
-
-    FilterPipeline m_before;
-    FilterPipeline m_after;
-};
-
 
 class SetLayerClippedCommand : public Command {
 public:

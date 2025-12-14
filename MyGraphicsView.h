@@ -17,6 +17,17 @@
 #include "layermanager.h"
 
 
+enum class DragContext {
+    None,
+    Paint,
+    MoveLayer,
+    ScaleLayer,
+    Pan,
+    Crop
+};
+
+
+
 class Tool;
 
 class MyGraphicsView: public QGraphicsView {
@@ -67,6 +78,8 @@ public:
 
 
     QPoint mapToImage(const QPoint& viewPos) const;
+    QPoint mapToActiveLayerImage(const QPointF& scenePos) const;
+    LayerManager* layerManager() const { return m_layerManager;}
 
 
 
@@ -107,9 +120,10 @@ private:
 
     Tool* m_activeTool {nullptr};
 
-    LayerManager* m_layerManager {nullptr};
 
+    DragContext m_dragContext = DragContext::None;
     DragMode m_dragMode {DragMode::None};
+    LayerManager* m_layerManager {nullptr};
     int m_dragHandle {-1};
     int m_dragLayerIndex {-1};
     QPointF m_dragStartScene {};

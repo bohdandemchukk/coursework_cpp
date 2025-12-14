@@ -41,8 +41,13 @@ public:
 
     QImage composite() const;
 
+    void markDirty();
+    void notifyChanged();
+
 private:
-    void notifyChanged() const;
+    mutable bool m_dirty = true;
+    mutable QImage m_cachedComposite;
+
     void clampActiveIndex();
     std::vector<std::shared_ptr<Layer>> m_layers;
     QSize m_canvasSize;

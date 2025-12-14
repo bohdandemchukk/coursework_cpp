@@ -22,32 +22,16 @@
 #include <algorithm>
 #include <QToolButton>
 #include <QMessageBox>
+#include <QActionGroup>
 
 #include <memory>
-
+\
+#include "changelayerpipelinecommand.h"
+#include "rotatelayercommand.h"
+#include "fliplayercommand.h"
+#include "imageio.h"
 #include "cropcommand.h"
 #include "layercommands.h"
-#include "rotatefilter.h"
-#include "flipfilter.h"
-#include "blurfilter.h"
-#include "sharpenfilter.h"
-#include "BrightnessFilter.h"
-#include "contrastfilter.h"
-#include "BWFilter.h"
-#include "filterpipeline.h"
-#include "saturationfilter.h"
-#include "temperaturefilter.h"
-#include "exposurefilter.h"
-#include "gammafilter.h"
-#include "tintfilter.h"
-#include "vibrancefilter.h"
-#include "shadowfilter.h"
-#include "highlightfilter.h"
-#include "clarityFilter.h"
-#include "vignettefilter.h"
-#include "grainfilter.h"
-#include "splittoningfilter.h"
-#include "fadefilter.h"
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -58,7 +42,6 @@ MainWindow::MainWindow(QWidget *parent)
     createTopBar();
     createFilterDock();
     createLayersDock();
-    createFilterSections();
     setupShortcuts();
 
     updateUndoRedoButtons();
@@ -215,17 +198,6 @@ void MainWindow::createActions()
         }
     });
 
-    m_rotateLeftAction = new QAction(tr("Rotate 90° Left"), this);
-    connect(m_rotateLeftAction, &QAction::triggered, this, &MainWindow::rotateLeft);
-
-    m_rotateRightAction = new QAction(tr("Rotate 90° Right"), this);
-    connect(m_rotateRightAction, &QAction::triggered, this, &MainWindow::rotateRight);
-
-    m_flipHAction = new QAction(tr("Flip Horizontal"), this);
-    connect(m_flipHAction, &QAction::triggered, this, &MainWindow::flipH);
-
-    m_flipVAction = new QAction(tr("Flip Vertical"), this);
-    connect(m_flipVAction, &QAction::triggered, this, &MainWindow::flipV);
 
     m_fitToScreenAction = new QAction(tr("Fit to Screen"), this);
 
@@ -278,10 +250,6 @@ void MainWindow::createTopBar()
     QMenu* imgMenu{new QMenu(this)};
     imgMenu->addAction(m_cropAction);
     imgMenu->addSeparator();
-    imgMenu->addAction(m_rotateLeftAction);
-    imgMenu->addAction(m_rotateRightAction);
-    imgMenu->addAction(m_flipHAction);
-    imgMenu->addAction(m_flipVAction);
     imgBtn->setMenu(imgMenu);
 
     tb->addWidget(imgBtn);
@@ -296,6 +264,23 @@ void MainWindow::createTopBar()
     viewBtn->setMenu(viewMenu);
 
     tb->addWidget(viewBtn);
+
+
+    m_brushAction = new QAction("Brush", this);
+    m_brushAction->setCheckable(true);
+
+    m_eraserAction = new QAction("Eraser", this);
+    m_eraserAction->setCheckable(true);
+
+    auto* toolGroup = new QActionGroup(this);
+    toolGroup->setExclusive(false);
+    toolGroup->addAction(m_brushAction);
+    toolGroup->addAction(m_eraserAction);
+
+    tb->addSeparator();
+    tb->addAction(m_brushAction);
+    tb->addAction(m_eraserAction);
+
 
     tb->addSeparator();
 
@@ -331,48 +316,107 @@ void MainWindow::createTopBar()
 
     tb->addAction(m_zoomInAction);
 
+    auto rotateLeft = new QAction("⟲", this);
+    auto rotateRight = new QAction("⟳", this);
+    auto flipH = new QAction("⇋", this);
+    auto flipV = new QAction("⇵", this);
+
+    tb->addAction(rotateLeft);
+    tb->addAction(rotateRight);
+    tb->addAction(flipH);
+    tb->addAction(flipV);
+
+    connect(rotateLeft, &QAction::triggered, this, [this] {
+        int i = m_layerManager.activeLayerIndex();
+        undoRedoStack.push(std::make_unique<RotateLayerCommand>(m_layerManager, i, -90));
+        updateUndoRedoButtons();
+    });
+
+    connect(rotateRight, &QAction::triggered, this, [this] {
+        int i = m_layerManager.activeLayerIndex();
+        undoRedoStack.push(std::make_unique<RotateLayerCommand>(m_layerManager, i, 90));
+        updateUndoRedoButtons();
+    });
+
+    connect(flipH, &QAction::triggered, this, [this] {
+        int i = m_layerManager.activeLayerIndex();
+        undoRedoStack.push(std::make_unique<FlipLayerCommand>(
+            m_layerManager, i, FlipLayerCommand::Direction::Horizontal));
+        updateUndoRedoButtons();
+    });
+
+    connect(flipV, &QAction::triggered, this, [this] {
+        int i = m_layerManager.activeLayerIndex();
+        undoRedoStack.push(std::make_unique<FlipLayerCommand>(
+            m_layerManager, i, FlipLayerCommand::Direction::Vertical));
+        updateUndoRedoButtons();
+    });
+
+    connect(m_brushAction, &QAction::toggled, this, [this](bool checked) {
+        if (checked) {
+            m_eraserAction->setChecked(false);
+            setActiveTool(m_brushTool.get());
+        } else {
+            setActiveTool(nullptr);
+        }
+    });
+
+    connect(m_eraserAction, &QAction::toggled, this, [this](bool checked) {
+        if (checked) {
+            m_brushAction->setChecked(false);
+            setActiveTool(m_eraserTool.get());
+        } else {
+            setActiveTool(nullptr);
+        }
+    });
+
+
+
+
     addToolBar(Qt::TopToolBarArea, tb);
+
+
 }
 
 void MainWindow::createFilterDock()
 {
     m_filterDock = new QDockWidget(tr("Filters"), this);
-    m_filterDock->setFeatures(QDockWidget::DockWidgetMovable);
     m_filterDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
 
-    QScrollArea* scrollArea{new QScrollArea(m_filterDock)};
-    scrollArea->setWidgetResizable(true);
-    scrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    scrollArea->setStyleSheet(R"(
-        QScrollArea {
-            background-color: #252525;
-            border: none;
-        }
-        QScrollBar:vertical {
-            background-color: #1a1a1a;
-            width: 12px;
-        }
-        QScrollBar::handle:vertical {
-            background-color: #3a3a3a;
-            border-radius: 6px;
-        }
-        QScrollBar::handle:vertical:hover {
-            background-color: #4a4a4a;
-        }
-    )");
+    m_filtersPanel = new FiltersPanel(this);
 
-    m_filterPanel = new QWidget();
-    QVBoxLayout* panelLayout{new QVBoxLayout(m_filterPanel)};
-    panelLayout->setSpacing(0);
-    panelLayout->setContentsMargins(0, 0, 0, 0);
-    panelLayout->addStretch();
+    connect(m_filtersPanel, &FiltersPanel::pipelineChanged,
+            this,
+            [this](int index, FilterPipeline before, FilterPipeline after)
+            {
+                auto cmd = std::make_unique<ChangeLayerPipelineCommand>(
+                    m_layerManager,
+                    index,
+                    std::move(before),
+                    std::move(after)
+                    );
+                undoRedoStack.push(std::move(cmd));
+                updateUndoRedoButtons();
+            });
 
-    scrollArea->setWidget(m_filterPanel);
-    m_filterDock->setWidget(scrollArea);
+    connect(m_filtersPanel, &FiltersPanel::previewRequested,
+            this, [this]()
+            {
+                updateComposite();
+            });
 
+
+    m_filterDock->setWidget(m_filtersPanel);
     addDockWidget(Qt::LeftDockWidgetArea, m_filterDock);
-    m_filterDock->setMinimumWidth(320);
+
+    connect(m_filtersPanel, &FiltersPanel::previewRequested,
+            this, [this]()
+            {
+                updateComposite();
+            });
+
 }
+
 
 void MainWindow::createLayersDock()
 {
@@ -424,368 +468,6 @@ void MainWindow::createLayersDock()
 }
 
 
-void MainWindow::createFilterSections()
-{
-    auto* layout{qobject_cast<QVBoxLayout*>(m_filterPanel->layout())};
-    if (!layout) return;
-
-    QLayoutItem* stretch{layout->takeAt(layout->count() - 1)};
-    delete stretch;
-
-    createToolsSection(layout);
-
-    auto* basicSection{new CollapsibleSection("Basic", m_filterPanel)};
-    auto* basicLayout{new QVBoxLayout()};
-    basicLayout->setSpacing(5);
-
-    m_exposureSlider = new FilterSlider("Exposure", -100, 100, 0);
-    m_contrastSlider = new FilterSlider("Contrast", -100, 100, 0);
-    m_brightnessSlider = new FilterSlider("Brightness", -100, 100, 0);
-    m_highlightSlider = new FilterSlider("Highlights", -100, 100, 0);
-    m_shadowSlider = new FilterSlider("Shadows", -100, 100, 0);
-    m_claritySlider = new FilterSlider("Clarity", -100, 100, 0);
-
-    basicLayout->addWidget(m_exposureSlider);
-    basicLayout->addWidget(m_contrastSlider);
-    basicLayout->addWidget(m_brightnessSlider);
-    basicLayout->addWidget(m_highlightSlider);
-    basicLayout->addWidget(m_shadowSlider);
-    basicLayout->addWidget(m_claritySlider);
-
-    basicSection->setContentLayout(basicLayout);
-    layout->addWidget(basicSection);
-    m_sections.append(basicSection);
-
-    auto* colorSection{new CollapsibleSection("Color", m_filterPanel)};
-    auto* colorLayout{new QVBoxLayout()};
-    colorLayout->setSpacing(5);
-
-    m_temperatureSlider = new FilterSlider("Temperature", -100, 100, 0);
-    m_tintSlider        = new FilterSlider("Tint", -100, 100, 0);
-    m_saturationSlider  = new FilterSlider("Saturation", -100, 100, 0);
-    m_vibranceSlider    = new FilterSlider("Vibrance", -100, 100, 0);
-
-    colorLayout->addWidget(m_temperatureSlider);
-    colorLayout->addWidget(m_tintSlider);
-    colorLayout->addWidget(m_saturationSlider);
-    colorLayout->addWidget(m_vibranceSlider);
-
-    colorSection->setContentLayout(colorLayout);
-    layout->addWidget(colorSection);
-    m_sections.append(colorSection);
-
-    auto* effectsSection{new CollapsibleSection("Effects", m_filterPanel)};
-    auto* effectsLayout{new QVBoxLayout()};
-    effectsLayout->setSpacing(5);
-
-    m_splitToningSlider = new FilterSlider("Split Toning", 0, 100, 0);
-    m_vignetteSlider    = new FilterSlider("Vignette", 0, 100, 0);
-    m_grainSlider       = new FilterSlider("Grain", 0, 100, 0);
-    m_fadeSlider        = new FilterSlider("Fade", 0, 100, 0);
-
-    effectsLayout->addWidget(m_splitToningSlider);
-    effectsLayout->addWidget(m_vignetteSlider);
-    effectsLayout->addWidget(m_grainSlider);
-    effectsLayout->addWidget(m_fadeSlider);
-
-    effectsSection->setContentLayout(effectsLayout);
-    layout->addWidget(effectsSection);
-    m_sections.append(effectsSection);
-
-    auto* detailSection{new CollapsibleSection("Detail", m_filterPanel)};
-    auto* detailLayout{new QVBoxLayout()};
-    detailLayout->setSpacing(5);
-
-    m_sharpenSlider = new FilterSlider("Sharpen", 0, 100, 0);
-    m_blurSlider    = new FilterSlider("Blur", 0, 100, 0);
-
-    detailLayout->addWidget(m_sharpenSlider);
-    detailLayout->addWidget(m_blurSlider);
-
-    detailSection->setContentLayout(detailLayout);
-    layout->addWidget(detailSection);
-    m_sections.append(detailSection);
-
-    auto* transformSection{new CollapsibleSection("Transform", m_filterPanel)};
-    auto* transformLayout{new QVBoxLayout()};
-    transformLayout->setSpacing(5);
-    transformLayout->setContentsMargins(10, 5, 10, 5);
-
-    QPushButton* rotateRBtn{new QPushButton("Rotate 90° Right")};
-    rotateRBtn->setStyleSheet("QPushButton { padding: 8px; background-color: #3a3a3a; border-radius: 3px; } QPushButton:hover { background-color: #4a4a4a; }");
-    transformLayout->addWidget(rotateRBtn);
-
-    QPushButton* rotateLBtn{new QPushButton("Rotate 90° Left")};
-    rotateLBtn->setStyleSheet("QPushButton { padding: 8px; background-color: #3a3a3a; border-radius: 3px; } QPushButton:hover { background-color: #4a4a4a; }");
-    transformLayout->addWidget(rotateLBtn);
-
-    QPushButton* flipHBtn{new QPushButton("Flip Horizontal")};
-    flipHBtn->setStyleSheet("QPushButton { padding: 8px; background-color: #3a3a3a; border-radius: 3px; } QPushButton:hover { background-color: #4a4a4a; }");
-    transformLayout->addWidget(flipHBtn);
-
-    QPushButton* flipVBtn{new QPushButton("Flip Vertical")};
-    flipVBtn->setStyleSheet("QPushButton { padding: 8px; background-color: #3a3a3a; border-radius: 3px; } QPushButton:hover { background-color: #4a4a4a; }");
-    transformLayout->addWidget(flipVBtn);
-
-    m_bwCheckbox = new QCheckBox("Black & White");
-    m_bwCheckbox->setStyleSheet("QCheckBox { color: #aaaaaa; padding: 5px; }");
-    transformLayout->addWidget(m_bwCheckbox);
-
-    m_gammaSlider = new FilterSlider("Gamma", -100, 100, 0);
-    transformLayout->addWidget(m_gammaSlider);
-
-    transformSection->setContentLayout(transformLayout);
-    layout->addWidget(transformSection);
-    m_sections.append(transformSection);
-
-    layout->addStretch();
-
-    for (CollapsibleSection* section : m_sections) {
-        connect(section, &CollapsibleSection::toggled, this, [this, section](bool expanded) {
-            if (!expanded) return;
-            for (CollapsibleSection* other : m_sections) {
-                if (other != section && other->isExpanded()) {
-                    other->toggle();
-                }
-            }
-        });
-    }
-
-    auto connectLayerSlider =
-        [this](FilterSlider* slider,
-               std::function<void(FilterPipeline&, int)> apply)
-    {
-        if (!slider) return;
-
-        connect(slider, &FilterSlider::sliderReleased,
-                this, [this, apply](int value)
-                {
-                    if (m_isUpdatingSlider) return;
-
-                    auto layer = std::dynamic_pointer_cast<AdjustmentLayer>(m_layerManager.activeLayer());
-                    if (!layer) return;
-
-                    int index = m_layerManager.activeLayerIndex();
-
-                    FilterPipeline before = layer->pipeline();
-                    FilterPipeline after  = before;
-
-                    apply(after, value);
-
-                    auto cmd = std::make_unique<ChangeLayerPipelineCommand>(
-                        m_layerManager,
-                        index,
-                        std::move(before),
-                        std::move(after)
-                        );
-
-                    undoRedoStack.push(std::move(cmd));
-                    updateUndoRedoButtons();
-                });
-    };
-
-    connectLayerSlider(m_exposureSlider,
-                       [](FilterPipeline& p, int v) {
-                           p.setOrReplace<ExposureFilter>(v);
-                       });
-
-    connectLayerSlider(m_contrastSlider,
-                       [](FilterPipeline& p, int v) {
-                           p.setOrReplace<ContrastFilter>(v);
-                       });
-
-    connectLayerSlider(m_brightnessSlider,
-                       [](FilterPipeline& p, int v) {
-                           p.setOrReplace<HighlightFilter>(v);
-                       });
-
-    connectLayerSlider(m_shadowSlider,
-                       [](FilterPipeline& p, int v) {
-                           p.setOrReplace<ShadowFilter>(v);
-                       });
-
-    connectLayerSlider(m_highlightSlider,
-                       [](FilterPipeline& p, int v) {
-                           p.setOrReplace<ExposureFilter>(v);
-                       });
-
-    connectLayerSlider(m_claritySlider,
-                       [](FilterPipeline& p, int v) {
-                           p.setOrReplace<ClarityFilter>(v);
-                       });
-
-    connectLayerSlider(m_temperatureSlider,
-                       [](FilterPipeline& p, int v) {
-                           p.setOrReplace<TemperatureFilter>(v);
-                       });
-
-    connectLayerSlider(m_tintSlider,
-                       [](FilterPipeline& p, int v) {
-                           p.setOrReplace<TintFilter>(v);
-                       });
-
-    connectLayerSlider(m_saturationSlider,
-                       [](FilterPipeline& p, int v) {
-                           p.setOrReplace<SaturationFilter>(v);
-                       });
-
-    connectLayerSlider(m_vibranceSlider,
-                       [](FilterPipeline& p, int v) {
-                           p.setOrReplace<VibranceFilter>(v);
-                       });
-
-    connectLayerSlider(m_splitToningSlider,
-                       [](FilterPipeline& p, int v) {
-                           p.setOrReplace<SplitToningFilter>(v);
-                       });
-
-    connectLayerSlider(m_vignetteSlider,
-                       [](FilterPipeline& p, int v) {
-                           p.setOrReplace<VignetteFilter>(v);
-                       });
-
-    connectLayerSlider(m_fadeSlider,
-                       [](FilterPipeline& p, int v) {
-                           p.setOrReplace<FadeFilter>(v);
-                       });
-
-    connectLayerSlider(m_grainSlider,
-                       [](FilterPipeline& p, int v) {
-                           p.setOrReplace<GrainFilter>(v);
-                       });
-
-    connectLayerSlider(m_sharpenSlider,
-                       [](FilterPipeline& p, int v) {
-                           p.setOrReplace<SharpenFilter>(v);
-                       });
-
-    connectLayerSlider(m_blurSlider,
-                       [](FilterPipeline& p, int v) {
-                           p.setOrReplace<BlurFilter>(v);
-                       });
-
-    connectLayerSlider(m_gammaSlider,
-                       [](FilterPipeline& p, int v) {
-                           p.setOrReplace<GammaFilter>(v);
-                       });
-
-
-
-
-    connect(m_bwCheckbox, &QCheckBox::toggled, this,
-            [this](bool checked)
-            {
-                if (m_isUpdatingSlider) return;
-
-                auto layer = m_layerManager.activeLayer();
-                auto adj = std::dynamic_pointer_cast<AdjustmentLayer>(layer);
-                if (!adj) return;
-
-                int index = m_layerManager.activeLayerIndex();
-
-                FilterPipeline before = adj->pipeline();
-                FilterPipeline after  = before;
-
-                if (checked)
-                    after.setOrReplace<BWFilter>(true);
-                else
-                    after.remove<BWFilter>();
-
-                auto cmd = std::make_unique<ChangeLayerPipelineCommand>(
-                    m_layerManager,
-                    index,
-                    std::move(before),
-                    std::move(after)
-                    );
-
-                undoRedoStack.push(std::move(cmd));
-                updateUndoRedoButtons();
-            }
-            );
-
-
-
-    connect(rotateRBtn, &QPushButton::clicked, this, &MainWindow::rotateRight);
-    connect(rotateLBtn, &QPushButton::clicked, this, &MainWindow::rotateLeft);
-    connect(flipHBtn,   &QPushButton::clicked, this, &MainWindow::flipH);
-    connect(flipVBtn,   &QPushButton::clicked, this, &MainWindow::flipV);
-}
-
-void MainWindow::createToolsSection(QVBoxLayout* layout)
-{
-    m_toolsSection = new CollapsibleSection("Tools", m_filterPanel);
-    auto* toolsLayout = new QVBoxLayout();
-    toolsLayout->setSpacing(8);
-
-    auto* brushRow = new QHBoxLayout();
-    auto* brushButton = new QPushButton("Brush");
-    brushButton->setCheckable(true);
-    auto* eraserButton = new QPushButton("Eraser");
-    eraserButton->setCheckable(true);
-
-    auto setExclusive = [brushButton, eraserButton](QPushButton* pressed) {
-        brushButton->setChecked(pressed == brushButton);
-        eraserButton->setChecked(pressed == eraserButton);
-    };
-
-    connect(brushButton, &QPushButton::clicked, this, [this, setExclusive, brushButton](bool checked) {
-        if (!checked) {
-            brushButton->setChecked(true);
-        }
-        setExclusive(brushButton);
-        setActiveTool(m_brushTool.get());
-    });
-
-    connect(eraserButton, &QPushButton::clicked, this, [this, setExclusive, eraserButton](bool checked) {
-        if (!checked) {
-            eraserButton->setChecked(true);
-        }
-        setExclusive(eraserButton);
-        setActiveTool(m_eraserTool.get());
-    });
-
-    brushRow->addWidget(brushButton);
-    brushRow->addWidget(eraserButton);
-
-    auto* sizeLayout = new QHBoxLayout();
-    auto* sizeLabel = new QLabel("Size:");
-    m_brushSizeSpin = new QSpinBox();
-    m_brushSizeSpin->setRange(1, 200);
-    m_brushSizeSpin->setValue(10);
-    connect(m_brushSizeSpin, QOverload<int>::of(&QSpinBox::valueChanged), this, [this](int value) {
-        if (m_brushTool) m_brushTool->setBrushSize(value);
-        if (m_eraserTool) m_eraserTool->setBrushSize(value);
-    });
-
-    sizeLayout->addWidget(sizeLabel);
-    sizeLayout->addWidget(m_brushSizeSpin);
-
-    auto* colorLayout = new QHBoxLayout();
-    auto* colorLabel = new QLabel("Color:");
-    m_colorButton = new QPushButton();
-    m_colorButton->setFixedSize(32, 24);
-    updateBrushColorButton();
-    connect(m_colorButton, &QPushButton::clicked, this, [this]() {
-        QColor chosen = QColorDialog::getColor(m_brushColor, this, "Select Brush Color");
-        if (!chosen.isValid()) return;
-        m_brushColor = chosen;
-        if (m_brushTool) m_brushTool->setColor(m_brushColor);
-        updateBrushColorButton();
-    });
-    colorLayout->addWidget(colorLabel);
-    colorLayout->addWidget(m_colorButton);
-
-    toolsLayout->addLayout(brushRow);
-    toolsLayout->addLayout(sizeLayout);
-    toolsLayout->addLayout(colorLayout);
-
-    m_toolsSection->setContentLayout(toolsLayout);
-    layout->addWidget(m_toolsSection);
-    m_sections.append(m_toolsSection);
-
-    brushButton->setChecked(true);
-}
-
 void MainWindow::setupShortcuts()
 {
     auto* zoomInShortcut{new QShortcut(QKeySequence("+"), this)};
@@ -822,14 +504,13 @@ void MainWindow::setupShortcuts()
     m_undoAction->setShortcut(QKeySequence("Ctrl+Z"));
     m_redoAction->setShortcuts({ QKeySequence("Ctrl+Y"), QKeySequence("Ctrl+Shift+Z") });
     m_cropAction->setShortcut(QKeySequence("C"));
-    m_rotateLeftAction->setShortcut(QKeySequence("Ctrl+["));
-    m_rotateRightAction->setShortcut(QKeySequence("Ctrl+]"));
     m_fitToScreenAction->setShortcut(QKeySequence("Ctrl+0"));
-    m_flipHAction->setShortcut(QKeySequence("Ctrl+H"));
-    m_flipVAction->setShortcut(QKeySequence("Ctrl+V"));
     m_fitToScreenAction->setShortcut(QKeySequence("Ctrl+0"));
     m_saveAction->setShortcut(QKeySequence("Ctrl+S"));
     m_saveAsAction->setShortcut(QKeySequence("Ctrl+Shift+S"));
+    m_brushAction->setShortcut(QKeySequence("B"));
+    m_eraserAction->setShortcut(QKeySequence("E"));
+
 }
 
 void MainWindow::initializeTools()
@@ -843,7 +524,7 @@ void MainWindow::initializeTools()
 
     m_brushTool->setColor(m_brushColor);
 
-    setActiveTool(m_brushTool.get());
+    setActiveTool(nullptr);
 }
 
 void MainWindow::setActiveTool(Tool* tool)
@@ -894,76 +575,6 @@ void MainWindow::keyReleaseEvent(QKeyEvent* event)
     QMainWindow::keyReleaseEvent(event);
 }
 
-void MainWindow::openImage()
-{
-    const QString fileName{QFileDialog::getOpenFileName(
-        this,
-        tr("Open Image"),
-        QString(),
-        tr("Images (*.png *.jpg *.jpeg *.webp *.bmp)")
-        )};
-
-    if (fileName.isEmpty()) return;
-
-    m_currentFilePath = fileName;
-
-    QImage img(fileName);
-    if (img.isNull()) return;
-
-    m_layerManager = LayerManager{};
-    m_layerManager.setCanvasSize(img.size());
-    m_layerManager.setOnChanged([this]() {
-        if (m_brushTool) m_brushTool->setTargetImage(activeLayerImage());
-        if (m_eraserTool) m_eraserTool->setTargetImage(activeLayerImage());
-        if (m_layersPanel) m_layersPanel->setLayers(m_layerManager.layers(), m_layerManager.activeLayerIndex());
-        updateComposite();
-    });
-
-    auto baseLayer = std::make_shared<PixelLayer>(tr("Background"), img.convertToFormat(QImage::Format_ARGB32));
-    m_layerManager.addLayer(baseLayer);
-    m_layerManager.setActiveLayerIndex(0);
-    if (m_graphicsView) {
-        m_graphicsView->setPixmap(QPixmap::fromImage(compositeWithFilters()));
-    }
-
-    filterState = FilterState{};
-    pipeline.clear();
-    undoRedoStack.clear();
-
-    m_isUpdatingSlider = true;
-    if (m_exposureSlider)   m_exposureSlider->setValue(0);
-    if (m_contrastSlider)   m_contrastSlider->setValue(0);
-    if (m_brightnessSlider) m_brightnessSlider->setValue(0);
-    if (m_highlightSlider)  m_highlightSlider->setValue(0);
-    if (m_shadowSlider)     m_shadowSlider->setValue(0);
-    if (m_claritySlider)    m_claritySlider->setValue(0);
-
-    if (m_temperatureSlider) m_temperatureSlider->setValue(0);
-    if (m_tintSlider)        m_tintSlider->setValue(0);
-    if (m_saturationSlider)  m_saturationSlider->setValue(0);
-    if (m_vibranceSlider)    m_vibranceSlider->setValue(0);
-
-    if (m_splitToningSlider) m_splitToningSlider->setValue(0);
-    if (m_vignetteSlider)    m_vignetteSlider->setValue(0);
-    if (m_grainSlider)       m_grainSlider->setValue(0);
-    if (m_fadeSlider)        m_fadeSlider->setValue(0);
-
-    if (m_sharpenSlider) m_sharpenSlider->setValue(0);
-    if (m_blurSlider)    m_blurSlider->setValue(0);
-    if (m_gammaSlider)   m_gammaSlider->setValue(0);
-
-    if (m_bwCheckbox) m_bwCheckbox->setChecked(false);
-
-    if (m_scaleSlider) m_scaleSlider->setValue(100);
-    m_isUpdatingSlider = false;
-
-    fitToScreen();
-
-    initializeTools();
-    rebuildPipeline();
-    updateUndoRedoButtons();
-}
-
 void MainWindow::onCropFinished(const QRect& rect)
 {
     QImage* target = activeLayerImage();
@@ -1006,176 +617,6 @@ void MainWindow::fitToScreen()
     m_graphicsView->setTransform(t);
 }
 
-void MainWindow::rotateLeft()
-{
-    changeFilterInt(&filterState.rotateAngle, filterState.rotateAngle - 90);
-}
-
-void MainWindow::rotateRight()
-{
-    changeFilterInt(&filterState.rotateAngle, filterState.rotateAngle + 90);
-}
-
-void MainWindow::flipH()
-{
-    changeFilterBool(&filterState.flipH, !filterState.flipH);
-}
-
-void MainWindow::flipV()
-{
-    changeFilterBool(&filterState.flipV, !filterState.flipV);
-}
-
-void MainWindow::changeFilterInt(int* target, int newValue)
-{
-    if (!target) return;
-    int oldValue{*target};
-
-    auto command{std::make_unique<ChangeFilterIntCommand>(
-        target,
-        oldValue,
-        newValue,
-        [this]() {
-            this->rebuildPipeline();
-        }
-        )};
-
-    undoRedoStack.push(std::move(command));
-    updateUndoRedoButtons();
-}
-
-void MainWindow::changeFilterBool(bool* target, bool newValue)
-{
-    if (!target) return;
-    bool oldValue{*target};
-
-    auto command{std::make_unique<ChangeFilterBoolCommand>(
-        target,
-        oldValue,
-        newValue,
-        [this]() {
-            this->rebuildPipeline();
-        }
-        )};
-
-    undoRedoStack.push(std::move(command));
-    updateUndoRedoButtons();
-}
-
-void MainWindow::rebuildPipeline()
-{
-    pipeline.clear();
-
-    pipeline.addFilter(std::make_unique<RotateFilter>(filterState.rotateAngle));
-    pipeline.addFilter(std::make_unique<FlipFilter>(FlipFilter::Direction::Horizontal, filterState.flipH));
-    pipeline.addFilter(std::make_unique<FlipFilter>(FlipFilter::Direction::Vertical,   filterState.flipV));
-
-    pipeline.addFilter(std::make_unique<BlurFilter>(filterState.blur));
-    pipeline.addFilter(std::make_unique<SharpenFilter>(filterState.sharpness));
-
-    pipeline.addFilter(std::make_unique<ExposureFilter>(filterState.exposure));
-    pipeline.addFilter(std::make_unique<ContrastFilter>(filterState.contrast));
-    pipeline.addFilter(std::make_unique<BrightnessFilter>(filterState.brightness));
-    pipeline.addFilter(std::make_unique<GammaFilter>(filterState.gamma));
-    pipeline.addFilter(std::make_unique<ClarityFilter>(filterState.clarity));
-
-    pipeline.addFilter(std::make_unique<TemperatureFilter>(filterState.temperature));
-    pipeline.addFilter(std::make_unique<TintFilter>(filterState.tint));
-    pipeline.addFilter(std::make_unique<SaturationFilter>(filterState.saturation));
-    pipeline.addFilter(std::make_unique<VibranceFilter>(filterState.vibrance));
-    pipeline.addFilter(std::make_unique<FadeFilter>(filterState.fade));
-
-    pipeline.addFilter(std::make_unique<ShadowFilter>(filterState.shadow));
-    pipeline.addFilter(std::make_unique<HighlightFilter>(filterState.highlight));
-    pipeline.addFilter(std::make_unique<GrainFilter>(filterState.grain));
-    pipeline.addFilter(std::make_unique<SplitToningFilter>(filterState.splitToning));
-
-    pipeline.addFilter(std::make_unique<VignetteFilter>(filterState.vignette));
-    pipeline.addFilter(std::make_unique<BWFilter>(filterState.BWFilter));
-
-    updateComposite();
-}
-
-void MainWindow::changeLayerFilters(std::function<void(FilterPipeline&)> edit)
-{
-    auto layer = std::dynamic_pointer_cast<AdjustmentLayer>(m_layerManager.activeLayer());
-    if (!layer) return;
-
-    int index = m_layerManager.activeLayerIndex();
-
-    FilterPipeline before = layer->pipeline();
-    FilterPipeline after = before;
-
-    edit(after);
-
-    auto cmd = std::make_unique<ChangeLayerPipelineCommand>(
-        m_layerManager,
-        index,
-        std::move(before),
-        std::move(after)
-        );
-
-    undoRedoStack.push(std::move(cmd));
-}
-
-void MainWindow::syncFilterUIFromActiveLayer()
-{
-    auto layer = std::dynamic_pointer_cast<AdjustmentLayer>(m_layerManager.activeLayer());
-    m_isUpdatingSlider = true;
-
-    if (!layer)
-    {
-        setFilterControlsEnabled(false);
-        if (m_bwCheckbox) m_bwCheckbox->setChecked(false);
-        if (m_exposureSlider)   m_exposureSlider->setValue(0);
-        if (m_contrastSlider)   m_contrastSlider->setValue(0);
-        if (m_brightnessSlider) m_brightnessSlider->setValue(0);
-        if (m_highlightSlider)  m_highlightSlider->setValue(0);
-        if (m_shadowSlider)     m_shadowSlider->setValue(0);
-        if (m_claritySlider)    m_claritySlider->setValue(0);
-        if (m_temperatureSlider) m_temperatureSlider->setValue(0);
-        if (m_tintSlider)        m_tintSlider->setValue(0);
-        if (m_saturationSlider)  m_saturationSlider->setValue(0);
-        if (m_vibranceSlider)    m_vibranceSlider->setValue(0);
-        if (m_splitToningSlider) m_splitToningSlider->setValue(0);
-        if (m_vignetteSlider)    m_vignetteSlider->setValue(0);
-        if (m_grainSlider)       m_grainSlider->setValue(0);
-        if (m_fadeSlider)        m_fadeSlider->setValue(0);
-        if (m_sharpenSlider)     m_sharpenSlider->setValue(0);
-        if (m_blurSlider)        m_blurSlider->setValue(0);
-        if (m_gammaSlider)       m_gammaSlider->setValue(0);
-        m_isUpdatingSlider = false;
-        return;
-    }
-
-    setFilterControlsEnabled(true);
-    auto& p = layer->pipeline();
-
-    m_exposureSlider->setValue(p.find<ExposureFilter>() ? p.find<ExposureFilter>()->getExposure() : 0);
-    m_temperatureSlider->setValue(p.find<TemperatureFilter>() ? p.find<TemperatureFilter>()->getTemperature() : 0);
-    m_blurSlider->setValue(p.find<BlurFilter>() ? p.find<BlurFilter>()->getBlur() : 0);
-    m_brightnessSlider->setValue(p.find<BrightnessFilter>() ? p.find<BrightnessFilter>()->getBrightness() : 0);
-    m_claritySlider->setValue(p.find<ClarityFilter>() ? p.find<ClarityFilter>()->getClarity() : 0);
-    m_contrastSlider->setValue(p.find<ContrastFilter>() ? p.find<ContrastFilter>()->getContrast() : 0);
-    m_fadeSlider->setValue(p.find<FadeFilter>() ? p.find<FadeFilter>()->getFade() : 0);
-    m_gammaSlider->setValue(p.find<GammaFilter>() ? p.find<GammaFilter>()->getGamma() : 0);
-    m_grainSlider->setValue(p.find<GrainFilter>() ? p.find<GrainFilter>()->getGrain() : 0);
-    m_highlightSlider->setValue(p.find<HighlightFilter>() ? p.find<HighlightFilter>()->getHighlight() : 0);
-    m_saturationSlider->setValue(p.find<SaturationFilter>() ? p.find<SaturationFilter>()->getSaturation() : 0);
-    m_shadowSlider->setValue(p.find<ShadowFilter>() ? p.find<ShadowFilter>()->getShadow() : 0);
-    m_sharpenSlider->setValue(p.find<SharpenFilter>() ? p.find<SharpenFilter>()->getSharpness() : 0);
-    m_splitToningSlider->setValue(p.find<SplitToningFilter>() ? p.find<SplitToningFilter>()->getSplitToning() : 0);
-    m_tintSlider->setValue(p.find<TintFilter>() ? p.find<TintFilter>()->getTint() : 0);
-    m_vibranceSlider->setValue(p.find<VibranceFilter>() ? p.find<VibranceFilter>()->getVibrance() : 0);
-    m_vignetteSlider->setValue(p.find<VignetteFilter>() ? p.find<VignetteFilter>()->getVignette() : 0);
-
-    if (m_bwCheckbox)
-        m_bwCheckbox->setChecked(p.find<BWFilter>() != nullptr);
-
-    m_isUpdatingSlider = false;
-
-}
-
 
 
 QImage* MainWindow::activeLayerImage()
@@ -1185,57 +626,6 @@ QImage* MainWindow::activeLayerImage()
         return nullptr;
     return &layer->image();
 }
-
-void MainWindow::selectActiveLayer(int index)
-{
-    m_layerManager.setActiveLayerIndex(index);
-
-    syncFilterUIFromActiveLayer();
-
-    QImage* target = activeLayerImage();
-    if (m_brushTool) m_brushTool->setTargetImage(target);
-    if (m_eraserTool) m_eraserTool->setTargetImage(target);
-}
-
-bool MainWindow::isActiveAdjustmentLayer() const
-{
-    auto layer = m_layerManager.activeLayer();
-    auto adj = std::dynamic_pointer_cast<const AdjustmentLayer>(layer);
-    return adj != nullptr;
-}
-
-void MainWindow::setFilterControlsEnabled(bool enabled)
-{
-    const auto setEnabledIf = [enabled](QWidget* w) { if (w) w->setEnabled(enabled); };
-    setEnabledIf(m_exposureSlider);
-    setEnabledIf(m_contrastSlider);
-    setEnabledIf(m_brightnessSlider);
-    setEnabledIf(m_highlightSlider);
-    setEnabledIf(m_shadowSlider);
-    setEnabledIf(m_claritySlider);
-    setEnabledIf(m_temperatureSlider);
-    setEnabledIf(m_tintSlider);
-    setEnabledIf(m_saturationSlider);
-    setEnabledIf(m_vibranceSlider);
-    setEnabledIf(m_splitToningSlider);
-    setEnabledIf(m_vignetteSlider);
-    setEnabledIf(m_grainSlider);
-    setEnabledIf(m_fadeSlider);
-    setEnabledIf(m_sharpenSlider);
-    setEnabledIf(m_blurSlider);
-    setEnabledIf(m_gammaSlider);
-    setEnabledIf(m_bwCheckbox);
-}
-
-QImage MainWindow::compositeWithFilters()
-{
-    QImage base = m_layerManager.composite();
-    if (base.isNull())
-        return base;
-
-    return pipeline.process(base);
-}
-
 
 
 void MainWindow::updateActiveLayerImage(const QImage &image)
@@ -1253,7 +643,7 @@ void MainWindow::updateComposite()
     if (!m_graphicsView)
         return;
 
-    QImage result = compositeWithFilters();
+    QImage result = m_layerManager.composite();
     if (!result.isNull())
     {
         m_graphicsView->setPixmap(QPixmap::fromImage(result));
@@ -1285,7 +675,6 @@ void MainWindow::handleAddAdjustmentLayer()
                        .arg(m_layerManager.layerCount() + 1);
 
     auto adjLayer = std::make_shared<AdjustmentLayer>(name);
-
     int insertIndex = m_layerManager.activeLayerIndex() + 1;
 
     auto cmd = std::make_unique<AddLayerCommand>(
@@ -1295,11 +684,12 @@ void MainWindow::handleAddAdjustmentLayer()
         );
 
     undoRedoStack.push(std::move(cmd));
-    m_layerManager.setActiveLayerIndex(insertIndex);
 
-    syncFilterUIFromActiveLayer();
+    selectActiveLayer(insertIndex);
+
     updateUndoRedoButtons();
 }
+
 
 QImage MainWindow::prepareImageForCanvas(const QImage& source, const QSize& canvasSize) const
 {
@@ -1358,6 +748,22 @@ void MainWindow::handleAddImageLayer()
     updateUndoRedoButtons();
 }
 
+void MainWindow::selectActiveLayer(int index)
+{
+    m_layerManager.setActiveLayerIndex(index);
+
+    if (m_filtersPanel)
+    {
+        m_filtersPanel->setActiveLayer(
+            m_layerManager.activeLayer(),
+            index
+            );
+    }
+
+    updateComposite();
+}
+
+
 
 void MainWindow::handleDeleteLayer(int managerIndex)
 {
@@ -1407,70 +813,17 @@ void MainWindow::handleOpacityChanged(int managerIndex, float opacity)
 void MainWindow::doUndo()
 {
     if (!undoRedoStack.canUndo()) return;
-
-    m_isUpdatingSlider = true;
     undoRedoStack.undo();
-
-    if (m_exposureSlider)   m_exposureSlider->setValue(filterState.exposure);
-    if (m_contrastSlider)   m_contrastSlider->setValue(filterState.contrast);
-    if (m_brightnessSlider) m_brightnessSlider->setValue(filterState.brightness);
-    if (m_highlightSlider)  m_highlightSlider->setValue(filterState.highlight);
-    if (m_shadowSlider)     m_shadowSlider->setValue(filterState.shadow);
-    if (m_claritySlider)    m_claritySlider->setValue(filterState.clarity);
-
-    if (m_temperatureSlider) m_temperatureSlider->setValue(filterState.temperature);
-    if (m_tintSlider)        m_tintSlider->setValue(filterState.tint);
-    if (m_saturationSlider)  m_saturationSlider->setValue(filterState.saturation);
-    if (m_vibranceSlider)    m_vibranceSlider->setValue(filterState.vibrance);
-
-    if (m_splitToningSlider) m_splitToningSlider->setValue(filterState.splitToning);
-    if (m_vignetteSlider)    m_vignetteSlider->setValue(filterState.vignette);
-    if (m_grainSlider)       m_grainSlider->setValue(filterState.grain);
-    if (m_fadeSlider)        m_fadeSlider->setValue(filterState.fade);
-
-    if (m_sharpenSlider) m_sharpenSlider->setValue(filterState.sharpness);
-    if (m_blurSlider)    m_blurSlider->setValue(filterState.blur);
-    if (m_gammaSlider)   m_gammaSlider->setValue(filterState.gamma);
-
-    if (m_bwCheckbox) m_bwCheckbox->setChecked(filterState.BWFilter);
-
-    m_isUpdatingSlider = false;
     updateUndoRedoButtons();
 }
 
 void MainWindow::doRedo()
 {
     if (!undoRedoStack.canRedo()) return;
-
-    m_isUpdatingSlider = true;
     undoRedoStack.redo();
-
-    if (m_exposureSlider)   m_exposureSlider->setValue(filterState.exposure);
-    if (m_contrastSlider)   m_contrastSlider->setValue(filterState.contrast);
-    if (m_brightnessSlider) m_brightnessSlider->setValue(filterState.brightness);
-    if (m_highlightSlider)  m_highlightSlider->setValue(filterState.highlight);
-    if (m_shadowSlider)     m_shadowSlider->setValue(filterState.shadow);
-    if (m_claritySlider)    m_claritySlider->setValue(filterState.clarity);
-
-    if (m_temperatureSlider) m_temperatureSlider->setValue(filterState.temperature);
-    if (m_tintSlider)        m_tintSlider->setValue(filterState.tint);
-    if (m_saturationSlider)  m_saturationSlider->setValue(filterState.saturation);
-    if (m_vibranceSlider)    m_vibranceSlider->setValue(filterState.vibrance);
-
-    if (m_splitToningSlider) m_splitToningSlider->setValue(filterState.splitToning);
-    if (m_vignetteSlider)    m_vignetteSlider->setValue(filterState.vignette);
-    if (m_grainSlider)       m_grainSlider->setValue(filterState.grain);
-    if (m_fadeSlider)        m_fadeSlider->setValue(filterState.fade);
-
-    if (m_sharpenSlider) m_sharpenSlider->setValue(filterState.sharpness);
-    if (m_blurSlider)    m_blurSlider->setValue(filterState.blur);
-    if (m_gammaSlider)   m_gammaSlider->setValue(filterState.gamma);
-
-    if (m_bwCheckbox) m_bwCheckbox->setChecked(filterState.BWFilter);
-
-    m_isUpdatingSlider = false;
     updateUndoRedoButtons();
 }
+
 
 void MainWindow::updateUndoRedoButtons()
 {
@@ -1478,43 +831,77 @@ void MainWindow::updateUndoRedoButtons()
     if (m_redoAction) m_redoAction->setEnabled(undoRedoStack.canRedo());
 }
 
-void MainWindow::save() {
-
-    if (m_currentFilePath.isEmpty()) {
-        saveAs();
+void MainWindow::openImage()
+{
+    auto imgOpt = ImageIO::openImage(this);
+    if (!imgOpt)
         return;
-    }
 
-    QPixmap pixmap {m_graphicsView->getPixmap()};
-
-    if (pixmap.isNull()) {
-        QMessageBox::warning(this, "Error", "No image to save");
-    }
-
-    if (!pixmap.save(m_currentFilePath)) {
-        QMessageBox::warning(this, "Error", "Failed to save image");
-    }
+    loadDocument(*imgOpt);
+    resetEditorState();
+    finalizeDocumentLoad();
 }
 
-void MainWindow::saveAs() {
-
-    if (m_currentFilePath.isEmpty()) return;
-
-    QString fileName {QFileDialog::getSaveFileName(
-        this,
-        "Save Image As",
-        "",
-        "PNG (*.png);;JPEG (*.jpg *.jpeg);;BMP (*.bmp)"
-        )};
-
-    if (fileName.isEmpty()) return;
 
 
-    QPixmap pixmap {m_graphicsView->getPixmap()};
+void MainWindow::save()
+{
+    QImage result = m_layerManager.composite();
+    ImageIO::saveImage(this, result, m_currentFilePath);
+}
 
-    if (!pixmap.save(fileName)) {
-        QMessageBox::warning(this, "Error", "Failed to save file");
-        return;
+void MainWindow::saveAs()
+{
+    QImage result = m_layerManager.composite();
+    ImageIO::saveImageAs(this, result, m_currentFilePath);
+}
+
+void MainWindow::loadDocument(const QImage& img)
+{
+    m_currentFilePath.clear();
+
+    m_layerManager = LayerManager{};
+    m_layerManager.setCanvasSize(img.size());
+
+    m_layerManager.setOnChanged([this]() {
+        if (m_brushTool)  m_brushTool->setTargetImage(activeLayerImage());
+        if (m_eraserTool) m_eraserTool->setTargetImage(activeLayerImage());
+        if (m_layersPanel)
+            m_layersPanel->setLayers(
+                m_layerManager.layers(),
+                m_layerManager.activeLayerIndex()
+                );
+        updateComposite();
+    });
+
+    auto baseLayer = std::make_shared<PixelLayer>(
+        tr("Background"),
+        img.convertToFormat(QImage::Format_ARGB32)
+        );
+
+    m_layerManager.addLayer(baseLayer);
+    m_layerManager.setActiveLayerIndex(0);
+    if (m_filtersPanel)
+    {
+        m_filtersPanel->setActiveLayer(
+            m_layerManager.activeLayer(),
+            m_layerManager.activeLayerIndex()
+            );
     }
+
+}
+
+
+void MainWindow::resetEditorState()
+{
+    undoRedoStack.clear();
+}
+
+
+void MainWindow::finalizeDocumentLoad()
+{
+    fitToScreen();
+    initializeTools();
+    updateUndoRedoButtons();
 }
 
