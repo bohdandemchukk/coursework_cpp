@@ -2,8 +2,8 @@
 
 #include <QPainter>
 #include <QPoint>
-#include <memory>
 #include <QDebug>
+#include <algorithm>
 
 namespace {
 QPainter::CompositionMode toQtMode(BlendMode mode)
@@ -17,7 +17,7 @@ QPainter::CompositionMode toQtMode(BlendMode mode)
 }
 }
 
-LayerManager::LayerManager(const QSize &canvasSize, QImage::Format format)
+LayerManager::LayerManager(const QSize& canvasSize, QImage::Format format)
     : m_canvasSize(canvasSize), m_format(format)
 {
 }
@@ -27,7 +27,7 @@ int LayerManager::layerCount() const
     return static_cast<int>(m_layers.size());
 }
 
-const std::vector<std::shared_ptr<Layer>> &LayerManager::layers() const
+const std::vector<std::shared_ptr<Layer>>& LayerManager::layers() const
 {
     return m_layers;
 }
@@ -39,7 +39,7 @@ std::shared_ptr<Layer> LayerManager::layerAt(int index) const
     return m_layers[static_cast<size_t>(index)];
 }
 
-int LayerManager::addLayer(const std::shared_ptr<Layer> &layer, int index)
+int LayerManager::addLayer(const std::shared_ptr<Layer>& layer, int index)
 {
     if (!layer)
         return -1;
@@ -77,13 +77,15 @@ bool LayerManager::moveLayer(int from, int to)
     auto layer = m_layers[static_cast<size_t>(from)];
     m_layers.erase(m_layers.begin() + from);
     m_layers.insert(m_layers.begin() + to, layer);
+
     if (m_activeLayerIndex == from)
         m_activeLayerIndex = to;
+
     notifyChanged();
     return true;
 }
 
-void LayerManager::setCanvasSize(const QSize &size)
+void LayerManager::setCanvasSize(const QSize& size)
 {
     m_canvasSize = size;
     notifyChanged();
@@ -128,59 +130,53 @@ void LayerManager::setOnChanged(ChangeCallback callback)
     m_onChanged = std::move(callback);
 }
 
-static QColor applyBlendMode(const QColor& base,
-                             const QColor& blend,
-                             BlendMode mode)
+void LayerManager::setPainting(bool painting)
+{
+    if (m_isPainting == painting)
+        return;
+    m_isPainting = painting;
+
+
+    markDirty();
+}
+
+bool LayerManager::isPainting() const
+{
+    return m_isPainting;
+}
+
+static QColor applyBlendMode(const QColor& base, const QColor& blend, BlendMode mode)
 {
     auto f = [](float v) { return std::clamp(v, 0.0f, 1.0f); };
 
-    float bR = base.redF();
-    float bG = base.greenF();
-    float bB = base.blueF();
-
-    float aR = blend.redF();
-    float aG = blend.greenF();
-    float aB = blend.blueF();
+    float bR = base.redF(),   bG = base.greenF(), bB = base.blueF();
+    float aR = blend.redF(),  aG = blend.greenF(), aB = blend.blueF();
 
     float r, g, b;
 
     switch (mode) {
     case BlendMode::Multiply:
-        r = bR * aR;
-        g = bG * aG;
-        b = bB * aB;
+        r = bR * aR; g = bG * aG; b = bB * aB;
         break;
-
     case BlendMode::Screen:
         r = 1.0f - (1.0f - bR) * (1.0f - aR);
         g = 1.0f - (1.0f - bG) * (1.0f - aG);
         b = 1.0f - (1.0f - bB) * (1.0f - aB);
         break;
-
     case BlendMode::Overlay:
-        r = (bR < 0.5f) ? (2.0f * bR * aR)
-                        : (1.0f - 2.0f * (1.0f - bR) * (1.0f - aR));
-        g = (bG < 0.5f) ? (2.0f * bG * aG)
-                        : (1.0f - 2.0f * (1.0f - bG) * (1.0f - aG));
-        b = (bB < 0.5f) ? (2.0f * bB * aB)
-                        : (1.0f - 2.0f * (1.0f - bB) * (1.0f - aB));
+        r = (bR < 0.5f) ? (2.0f * bR * aR) : (1.0f - 2.0f * (1.0f - bR) * (1.0f - aR));
+        g = (bG < 0.5f) ? (2.0f * bG * aG) : (1.0f - 2.0f * (1.0f - bG) * (1.0f - aG));
+        b = (bB < 0.5f) ? (2.0f * bB * aB) : (1.0f - 2.0f * (1.0f - bB) * (1.0f - aB));
         break;
-
     default:
-        r = aR;
-        g = aG;
-        b = aB;
+        r = aR; g = aG; b = aB;
         break;
     }
 
     return QColor::fromRgbF(f(r), f(g), f(b), base.alphaF());
 }
 
-static float lerp(float a, float b, float t)
-{
-    return a + (b - a) * t;
-}
-
+static float lerp(float a, float b, float t) { return a + (b - a) * t; }
 
 static QRgb blendPixel(QRgb base, QRgb adj, float opacity, BlendMode mode)
 {
@@ -190,7 +186,6 @@ static QRgb blendPixel(QRgb base, QRgb adj, float opacity, BlendMode mode)
 
     QColor cb(base);
     QColor ca(adj);
-
     QColor blended = applyBlendMode(cb, ca, mode);
 
     QColor out;
@@ -202,7 +197,6 @@ static QRgb blendPixel(QRgb base, QRgb adj, float opacity, BlendMode mode)
     return out.rgba();
 }
 
-
 QImage LayerManager::composite() const
 {
     if (!m_canvasSize.isValid())
@@ -210,7 +204,6 @@ QImage LayerManager::composite() const
 
     if (!m_dirty && !m_cachedComposite.isNull())
         return m_cachedComposite;
-
 
     QImage result(m_canvasSize, m_format);
     result.fill(Qt::transparent);
@@ -222,22 +215,24 @@ QImage LayerManager::composite() const
     QPointF pendingOffset {0.0, 0.0};
     float pendingScale = 1.0f;
 
-
     QPainter painter(&result);
 
     auto flushPending = [&]() {
         if (!hasPending) return;
+
         painter.setOpacity(pendingOpacity);
         painter.setCompositionMode(toQtMode(pendingBlend));
         painter.save();
         painter.translate(pendingOffset);
         painter.scale(pendingScale, pendingScale);
-        painter.drawImage(QPoint(0,0), pendingImg);  
+        painter.drawImage(QPoint(0, 0), pendingImg);
         painter.restore();
 
         hasPending = false;
         pendingImg = QImage();
     };
+
+    const bool painting = m_isPainting;
 
     for (auto it = m_layers.begin(); it != m_layers.end(); ++it)
     {
@@ -263,13 +258,15 @@ QImage LayerManager::composite() const
                 if (next->type() == LayerType::Adjustment) {
                     auto a = std::static_pointer_cast<AdjustmentLayer>(next);
                     if (!a->isClipped())
-                        break;          // перший unclipped adjustment зупиняє “clipped stack”
+                        break;
                     willBeClipped = true;
                 }
             }
 
-            pendingImg = willBeClipped ? pixel->image().copy()
-                                       : pixel->image();
+
+            const bool needCopy = (!painting && willBeClipped);
+            pendingImg = needCopy ? pixel->image().copy()
+                                  : pixel->image();
 
             pendingOpacity = pixel->opacity();
             pendingBlend   = pixel->blendMode();
@@ -279,6 +276,11 @@ QImage LayerManager::composite() const
         }
         else if (layer->type() == LayerType::Adjustment)
         {
+            if (painting) {
+                flushPending();
+                continue;
+            }
+
             auto adj = std::static_pointer_cast<AdjustmentLayer>(layer);
 
             if (adj->isClipped())
@@ -290,7 +292,6 @@ QImage LayerManager::composite() const
                 for (int y = 0; y < pendingImg.height(); ++y) {
                     QRgb* b = reinterpret_cast<QRgb*>(pendingImg.scanLine(y));
                     const QRgb* a = reinterpret_cast<const QRgb*>(adjusted.constScanLine(y));
-
                     for (int x = 0; x < pendingImg.width(); ++x) {
                         if (qAlpha(b[x]) == 0) continue;
                         b[x] = blendPixel(b[x], a[x], adj->opacity(), adj->blendMode());
@@ -306,7 +307,6 @@ QImage LayerManager::composite() const
                 for (int y = 0; y < result.height(); ++y) {
                     QRgb* b = reinterpret_cast<QRgb*>(result.scanLine(y));
                     const QRgb* a = reinterpret_cast<const QRgb*>(adjusted.constScanLine(y));
-
                     for (int x = 0; x < result.width(); ++x) {
                         if (qAlpha(b[x]) == 0) continue;
                         b[x] = blendPixel(b[x], a[x], adj->opacity(), adj->blendMode());
@@ -316,20 +316,17 @@ QImage LayerManager::composite() const
         }
     }
 
-
     flushPending();
 
     m_cachedComposite = result;
     m_dirty = false;
     return m_cachedComposite;
-
 }
 
 void LayerManager::markDirty()
 {
     m_dirty = true;
 }
-
 
 void LayerManager::notifyChanged()
 {
@@ -340,12 +337,10 @@ void LayerManager::notifyChanged()
 
 void LayerManager::clampActiveIndex()
 {
-    if (m_layers.empty())
-    {
+    if (m_layers.empty()) {
         m_activeLayerIndex = -1;
         return;
     }
-
     if (m_activeLayerIndex >= layerCount())
         m_activeLayerIndex = layerCount() - 1;
 }

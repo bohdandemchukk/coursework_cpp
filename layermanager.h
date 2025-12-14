@@ -43,10 +43,14 @@ public:
 
     void markDirty();
     void notifyChanged();
+    void setPainting(bool painting);
+    bool isPainting() const;
+
 
 private:
     mutable bool m_dirty = true;
     mutable QImage m_cachedComposite;
+    bool m_isPainting = false;
 
     void clampActiveIndex();
     std::vector<std::shared_ptr<Layer>> m_layers;

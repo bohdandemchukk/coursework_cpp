@@ -46,7 +46,6 @@ void MyGraphicsView::mousePressEvent(QMouseEvent* event)
 {
     const QPointF scenePos = mapToScene(event->pos());
 
-    // --- PAN ---
     if (getPanMode() && event->button() == Qt::LeftButton) {
         m_dragContext = DragContext::Pan;
         m_lastPanPoint = event->pos();
@@ -55,7 +54,6 @@ void MyGraphicsView::mousePressEvent(QMouseEvent* event)
         return;
     }
 
-    // --- CROP ---
     if (getCropMode() && event->button() == Qt::LeftButton) {
         m_dragContext = DragContext::Crop;
         setCropStart(event->pos());
@@ -65,16 +63,19 @@ void MyGraphicsView::mousePressEvent(QMouseEvent* event)
         return;
     }
 
-    // --- TOOL HAS PRIORITY ---
     if (m_activeTool && event->button() == Qt::LeftButton) {
         m_dragContext = DragContext::Paint;
+
+        if (m_layerManager)
+            m_layerManager->setPainting(true);
+
         QPoint imgPos = mapToActiveLayerImage(scenePos);
         m_activeTool->onMousePress(imgPos, event->button());
         event->accept();
         return;
     }
 
-    // --- MOVE / SCALE (ONLY IF NO TOOL) ---
+
     if (event->button() == Qt::LeftButton && m_layerManager) {
         int hitIndex = -1;
         auto pixelLayer = hitTestLayers(scenePos, hitIndex);
@@ -151,7 +152,7 @@ void MyGraphicsView::mouseMoveEvent(QMouseEvent* event)
 
         QPointF delta = scenePos - m_dragStartScene;
         layer->setOffset(m_initialOffset + delta);
-        viewport()->update(); // ❗ НЕ notifyLayerChanged
+        viewport()->update();
         event->accept();
         return;
     }
@@ -194,14 +195,23 @@ void MyGraphicsView::mouseReleaseEvent(QMouseEvent* event)
     if (m_dragContext == DragContext::MoveLayer ||
         m_dragContext == DragContext::ScaleLayer)
     {
-        m_layerManager->notifyLayerChanged(); // ОДИН раз
+        m_layerManager->notifyLayerChanged();
     }
 
+    if (m_layerManager && event->button() == Qt::LeftButton)
+        m_layerManager->setPainting(false);
+
+
     if (m_dragContext == DragContext::Paint && m_activeTool) {
+
+        if (m_layerManager)
+            m_layerManager->setPainting(false);
+
         QPoint imgPos = mapToActiveLayerImage(mapToScene(event->pos()));
         if (auto cmd = m_activeTool->onMouseRelease(imgPos, event->button()))
             emit commandReady(cmd.release());
     }
+
 
     m_dragContext = DragContext::None;
     QGraphicsView::mouseReleaseEvent(event);
