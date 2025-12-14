@@ -1,6 +1,6 @@
 #include "sharpenfilter.h"
 #include "gaussianblurutil.h"
-
+#include "fastblur.h"
 
 SharpenFilter::SharpenFilter(int sharpness)
     : m_sharpness {sharpness} {}
@@ -25,7 +25,7 @@ QImage SharpenFilter::apply(const QImage& input) const {
     int sharpness {getSharpness()};
 
     QImage result {input.copy()};
-    QImage blurred {GaussianBlurUtil::apply(input, 1.0)};
+    QImage blurred {FastBlur::apply(input, 1.0)};
 
     int height {result.height()};
     int width {result.width()};

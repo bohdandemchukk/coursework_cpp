@@ -9,6 +9,7 @@
 #include "layer.h"
 #include "filterpipeline.h"
 
+#include "fastblurfilter.h"
 #include "rotatefilter.h"
 #include "flipfilter.h"
 #include "exposurefilter.h"
@@ -99,11 +100,13 @@ void FiltersPanel::buildUI()
         m_clarity = new FilterSlider("Clarity",  -100, 100, 0);
         m_sharpen = new FilterSlider("Sharpen",   0,   100, 0);
         m_blur    = new FilterSlider("Blur",      0,   100, 0);
+        m_fastBlur= new FilterSlider("Fast Blur", 0,   100, 0);
         m_grain   = new FilterSlider("Grain",     0,   100, 0);
 
         l->addWidget(m_clarity);
         l->addWidget(m_sharpen);
         l->addWidget(m_blur);
+        l->addWidget(m_fastBlur);
         l->addWidget(m_grain);
 
         section->setContentLayout(l);
@@ -112,6 +115,7 @@ void FiltersPanel::buildUI()
         connectSlider(m_clarity,[](auto& p,int v){ p.template setOrReplace<ClarityFilter>(v); });
         connectSlider(m_sharpen,[](auto& p,int v){ p.template setOrReplace<SharpenFilter>(v); });
         connectSlider(m_blur,   [](auto& p,int v){ p.template setOrReplace<BlurFilter>(v); });
+        connectSlider(m_fastBlur,   [](auto& p,int v){ p.template setOrReplace<FastBlurFilter>(v); });
         connectSlider(m_grain,  [](auto& p,int v){ p.template setOrReplace<GrainFilter>(v); });
     }
 
@@ -234,9 +238,22 @@ void FiltersPanel::syncFromActiveLayer()
         m_contrast->setValue(0);
         m_brightness->setValue(0);
         m_blur->setValue(0);
+        m_fastBlur->setValue(0);
         m_sharpen->setValue(0);
         m_gamma->setValue(0);
         m_bw->setChecked(false);
+        m_temperature->setValue(0);
+        m_tint->setValue(0);
+        m_saturation->setValue(0);
+        m_vibrance->setValue(0);
+        m_fade->setValue(0);
+        m_clarity->setValue(0);
+        m_grain->setValue(0);
+        m_splithighlight->setValue(0);
+        m_splitshadow->setValue(0);
+        m_vignette->setValue(0);
+
+
         m_updating = false;
         return;
     }
@@ -247,8 +264,21 @@ void FiltersPanel::syncFromActiveLayer()
     m_contrast->setValue(p.find<ContrastFilter>() ? p.find<ContrastFilter>()->getContrast() : 0);
     m_brightness->setValue(p.find<BrightnessFilter>() ? p.find<BrightnessFilter>()->getBrightness() : 0);
     m_blur->setValue(p.find<BlurFilter>() ? p.find<BlurFilter>()->getBlur() : 0);
+    m_fastBlur->setValue(p.find<FastBlurFilter>() ? p.find<FastBlurFilter>()->getBlur() : 0);
     m_sharpen->setValue(p.find<SharpenFilter>() ? p.find<SharpenFilter>()->getSharpness() : 0);
     m_gamma->setValue(p.find<GammaFilter>() ? p.find<GammaFilter>()->getGamma() : 0);
+
+    m_temperature->setValue(p.find<TemperatureFilter>() ? p.find<TemperatureFilter>()->getTemperature() : 0);
+    m_tint->setValue(p.find<TintFilter>() ? p.find<TintFilter>()->getTint() : 0);
+    m_saturation->setValue(p.find<SaturationFilter>() ? p.find<SaturationFilter>()->getSaturation() : 0);
+    m_vibrance->setValue(p.find<VibranceFilter>() ? p.find<VibranceFilter>()->getVibrance() : 0);
+
+    m_fade->setValue(p.find<FadeFilter>() ? p.find<FadeFilter>()->getFade() : 0);
+    m_clarity->setValue(p.find<ClarityFilter>() ? p.find<ClarityFilter>()->getClarity() : 0);
+    m_grain->setValue(p.find<GrainFilter>() ? p.find<GrainFilter>()->getGrain() : 0);
+    m_splithighlight->setValue(p.find<HighlightFilter>() ? p.find<HighlightFilter>()->getHighlight() : 0);
+    m_splitshadow->setValue(p.find<ShadowFilter>() ? p.find<ShadowFilter>()->getShadow() : 0);
+    m_vignette->setValue(p.find<VignetteFilter>() ? p.find<VignetteFilter>()->getVignette() : 0);
 
     m_bw->setChecked(p.find<BWFilter>() != nullptr);
 

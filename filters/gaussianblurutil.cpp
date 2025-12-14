@@ -83,7 +83,7 @@ QImage GaussianBlurUtil::applyVertical(const QImage& input, const std::vector<do
                 std::clamp(static_cast<int>(r), 0, 255),
                 std::clamp(static_cast<int>(g), 0, 255),
                 std::clamp(static_cast<int>(b), 0, 255)
-            );
+                );
         }
     }
 

@@ -77,6 +77,8 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     rotatelayercommand.h rotatelayercommand.cpp
     fliplayercommand.h fliplayercommand.cpp
     changelayerpipelinecommand.h changelayerpipelinecommand.cpp
+    filters/fastblur.h filters/fastblur.cpp
+    filters/fastblurfilter.h filters/fastblurfilter.cpp
 
 
 

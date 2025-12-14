@@ -622,9 +622,11 @@ void MainWindow::fitToScreen()
 QImage* MainWindow::activeLayerImage()
 {
     auto layer = std::dynamic_pointer_cast<PixelLayer>(m_layerManager.activeLayer());
-    if (!layer)
-        return nullptr;
-    return &layer->image();
+    if (!layer) return nullptr;
+
+    QImage& img = layer->image();
+    Q_ASSERT(img.format() == QImage::Format_ARGB32_Premultiplied);
+    return &img;
 }
 
 
@@ -693,14 +695,14 @@ void MainWindow::handleAddAdjustmentLayer()
 
 QImage MainWindow::prepareImageForCanvas(const QImage& source, const QSize& canvasSize) const
 {
-    QImage converted = source.convertToFormat(QImage::Format_ARGB32);
+    QImage converted = source.convertToFormat(QImage::Format_ARGB32_Premultiplied);
     if (!canvasSize.isValid())
         return converted;
 
     if (converted.size() == canvasSize)
         return converted;
 
-    QImage result(canvasSize, QImage::Format_ARGB32);
+    QImage result(canvasSize, QImage::Format_ARGB32_Premultiplied);
     result.fill(Qt::transparent);
 
     QImage scaled = converted.scaled(canvasSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
@@ -847,13 +849,17 @@ void MainWindow::openImage()
 void MainWindow::save()
 {
     QImage result = m_layerManager.composite();
-    ImageIO::saveImage(this, result, m_currentFilePath);
+    QImage out = result.convertToFormat(QImage::Format_ARGB32);
+    ImageIO::saveImage(this, out, m_currentFilePath);
+
 }
 
 void MainWindow::saveAs()
 {
     QImage result = m_layerManager.composite();
-    ImageIO::saveImageAs(this, result, m_currentFilePath);
+    QImage out = result.convertToFormat(QImage::Format_ARGB32);
+    ImageIO::saveImageAs(this, out, m_currentFilePath);
+
 }
 
 void MainWindow::loadDocument(const QImage& img)
@@ -876,7 +882,7 @@ void MainWindow::loadDocument(const QImage& img)
 
     auto baseLayer = std::make_shared<PixelLayer>(
         tr("Background"),
-        img.convertToFormat(QImage::Format_ARGB32)
+        img.convertToFormat(QImage::Format_ARGB32_Premultiplied)
         );
 
     m_layerManager.addLayer(baseLayer);

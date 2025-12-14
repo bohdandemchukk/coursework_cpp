@@ -66,6 +66,7 @@ private:
     FilterSlider* m_contrast = nullptr;
     FilterSlider* m_brightness = nullptr;
     FilterSlider* m_blur = nullptr;
+    FilterSlider* m_fastBlur = nullptr;
     FilterSlider* m_sharpen = nullptr;
     FilterSlider* m_gamma = nullptr;
 

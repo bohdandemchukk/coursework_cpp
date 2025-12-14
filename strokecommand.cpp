@@ -39,7 +39,7 @@ void StrokeCommand::undo()
 {
     apply(m_before);
     if (m_updateCallback)
-        m_updateCallback(); // 🔥
+        m_updateCallback();
 }
 
 
@@ -47,5 +47,5 @@ void StrokeCommand::execute()
 {
     apply(m_after);
     if (m_updateCallback)
-        m_updateCallback(); // 🔥
+        m_updateCallback();
 }

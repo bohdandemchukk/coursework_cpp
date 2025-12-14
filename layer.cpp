@@ -34,8 +34,16 @@ PixelLayer::PixelLayer(QString name,
 {}
 
 const QImage& PixelLayer::image() const { return m_image; }
-QImage& PixelLayer::image() { return m_image; }
-void PixelLayer::setImage(const QImage& image) { m_image = image; }
+QImage& PixelLayer::image() {
+    Q_ASSERT(m_image.format() == QImage::Format_ARGB32_Premultiplied);
+    return m_image;
+}
+void PixelLayer::setImage(const QImage& image) {
+    if (image.format() == QImage::Format_ARGB32_Premultiplied)
+        m_image = image;
+    else
+        m_image = image.convertToFormat(QImage::Format_ARGB32_Premultiplied);
+}
 
 QPointF PixelLayer::offset() const {
     return m_offset;

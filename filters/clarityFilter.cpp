@@ -1,6 +1,6 @@
 #include "clarityFilter.h"
 #include "gaussianblurutil.h"
-
+#include "fastblur.h"
 
 ClarityFilter::ClarityFilter(int clarity)
     : m_clarity{clarity} {}
@@ -20,7 +20,7 @@ void ClarityFilter::setClarity(int clarity) {
 QImage ClarityFilter::apply(const QImage& input) const {
     if (!isActive()) return input;
 
-    QImage blurred {GaussianBlurUtil::apply(input, 15)};
+    QImage blurred {FastBlur::apply(input, 15)};
     QImage result {input.copy()};
 
     double clarity {getClarity() / 100.0};

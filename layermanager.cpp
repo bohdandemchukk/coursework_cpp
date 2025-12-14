@@ -207,6 +207,7 @@ QImage LayerManager::composite() const
 
     QImage result(m_canvasSize, m_format);
     result.fill(Qt::transparent);
+    Q_ASSERT(result.format() == QImage::Format_ARGB32_Premultiplied);
 
     bool hasPending = false;
     QImage pendingImg;
@@ -287,17 +288,35 @@ QImage LayerManager::composite() const
             {
                 if (!hasPending) continue;
 
-                const QImage& adjusted = adj->cachedProcess(pendingImg);
+                QImage adjusted = adj->pipeline().process(pendingImg);
+
 
                 for (int y = 0; y < pendingImg.height(); ++y) {
-                    QRgb* b = reinterpret_cast<QRgb*>(pendingImg.scanLine(y));
-                    const QRgb* a = reinterpret_cast<const QRgb*>(adjusted.constScanLine(y));
+                    const QRgb* src = reinterpret_cast<const QRgb*>(pendingImg.constScanLine(y));
+                    QRgb* dst = reinterpret_cast<QRgb*>(adjusted.scanLine(y));
+
                     for (int x = 0; x < pendingImg.width(); ++x) {
-                        if (qAlpha(b[x]) == 0) continue;
-                        b[x] = blendPixel(b[x], a[x], adj->opacity(), adj->blendMode());
+                        dst[x] = qRgba(
+                            qRed(dst[x]),
+                            qGreen(dst[x]),
+                            qBlue(dst[x]),
+                            qAlpha(src[x])
+                            );
                     }
                 }
+
+                pendingImg = std::move(adjusted);
+
+                pendingOpacity = 1.0f;
+                pendingBlend   = BlendMode::Normal;
+                pendingOffset  = QPointF(0, 0);
+                pendingScale   = 1.0f;
+                hasPending = true;
+                continue;
             }
+
+
+
             else
             {
                 flushPending();

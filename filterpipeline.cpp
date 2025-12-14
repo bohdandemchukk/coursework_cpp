@@ -41,14 +41,17 @@ void FilterPipeline::clear() {
 
 QImage FilterPipeline::process(const QImage& src) const
 {
-    QImage img = src.convertToFormat(QImage::Format_ARGB32);
+    Q_ASSERT(src.format() == QImage::Format_ARGB32_Premultiplied);
 
-    for (auto& filter : filters)
+    QImage img = src.copy();
+
+    for (auto& filter : filters) {
         img = filter->apply(img);
+        Q_ASSERT(img.format() == QImage::Format_ARGB32_Premultiplied);
+    }
 
-    qDebug() << "Process filters:" << filters.size();
 
-    return img.convertToFormat(QImage::Format_ARGB32_Premultiplied);
+    return img;
 }
 
 
