@@ -204,6 +204,7 @@ QImage LayerManager::composite() const
     if (!m_canvasSize.isValid())
         return QImage();
 
+
     QImage result(m_canvasSize, m_format);
     result.fill(Qt::transparent);
     m_compositeOffset = QPointF(0, 0);
@@ -245,6 +246,8 @@ QImage LayerManager::composite() const
             flushPending();
 
             auto pixel = std::static_pointer_cast<PixelLayer>(layer);
+
+
 
             bool willBeClipped = false;
             for (auto it2 = std::next(it); it2 != m_layers.end(); ++it2) {
@@ -315,6 +318,8 @@ QImage LayerManager::composite() const
     }
 
     flushPending();
+
+
     return result;
 }
 

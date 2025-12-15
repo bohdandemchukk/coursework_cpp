@@ -1,20 +1,36 @@
 #include "FilterSlider.h"
 #include <QHBoxLayout>
 #include <QVBoxLayout>
+#include <QLabel>
+#include <QIcon>
 
-FilterSlider::FilterSlider(const QString &name, int min, int max, int defaultValue, QWidget *parent)
+
+FilterSlider::FilterSlider(const QString& name, const QIcon& icon, int min, int max, int defaultValue, QWidget *parent)
     : QWidget(parent), m_defaultValue(defaultValue)
 {
-    QLabel* label = new QLabel(name, this);
-    setAttribute(Qt::WA_StyledBackground, true);
-    setStyleSheet("background: transparent;");
 
+
+    setObjectName("FilterSlider");
+    QLabel* iconLabel = new QLabel(this);
+    iconLabel->setFixedSize(16, 16);
+    iconLabel->setPixmap(
+        QIcon(icon).pixmap(16, 16)
+        );
+    iconLabel->setAlignment(Qt::AlignCenter);
+
+    QLabel* label = new QLabel(name, this);
     label->setFixedWidth(70);
     label->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
 
+    setAttribute(Qt::WA_StyledBackground, true);
+
+
+
     m_slider = new QSlider(Qt::Horizontal, this);
+    m_slider->setMinimumWidth(120);
+    m_slider->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     m_spinBox = new QSpinBox(this);
-    resetButton = new QPushButton("↺", this);
+    resetButton = new QPushButton(QIcon(":/icons/toolbar/undo"),"", this);
 
     m_slider->setRange(min, max);
     m_slider->setValue(m_defaultValue);
@@ -43,11 +59,22 @@ FilterSlider::FilterSlider(const QString &name, int min, int max, int defaultVal
     layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(8);
 
-    layout->addWidget(label);
+    auto* labelRow = new QHBoxLayout;
+    labelRow->setSpacing(6);
+    labelRow->setContentsMargins(0, 0, 0, 0);
+
+    labelRow->addWidget(iconLabel);
+    labelRow->addWidget(label);
+
+    layout->addLayout(labelRow);
     layout->addLayout(sliderRow, 1);
     layout->addWidget(resetButton);
 
     setLayout(layout);
+
+    connect(m_slider, &QSlider::sliderPressed, this, [this]() {
+        emit sliderPressed();
+    });
 
     connect(m_slider, &QSlider::valueChanged, m_spinBox, &QSpinBox::setValue);
     connect(m_spinBox, &QSpinBox::valueChanged, m_slider, &QSlider::setValue);
@@ -75,5 +102,8 @@ int FilterSlider::getValue() const
 
 void FilterSlider::setValue(int value)
 {
+
     m_slider->setValue(value);
 }
+
+

@@ -23,20 +23,23 @@
 #include <QToolButton>
 #include <QMessageBox>
 #include <QActionGroup>
-
+#include <QPixmap>
 #include <memory>
-\
+
+#include <QSvgRenderer>
 #include "changelayerpipelinecommand.h"
 #include "rotatelayercommand.h"
 #include "fliplayercommand.h"
 #include "imageio.h"
 #include "cropcommand.h"
 #include "layercommands.h"
+#include <QPainter>
+#include <QPixmap>
+
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
 {
-    applyGlobalStyle();
     createCentralCanvas();
     createActions();
     createTopBar();
@@ -58,278 +61,6 @@ MainWindow::MainWindow(QWidget *parent)
 
 MainWindow::~MainWindow() = default;
 
-void MainWindow::applyGlobalStyle()
-{
-    setStyleSheet(R"(
-        /* =========================
-           GLOBAL
-        ==========================*/
-        QWidget {
-            background-color: #2a2f33;
-            color: #d6d6d6;
-            font-family: 'Segoe UI', 'Inter', sans-serif;
-            font-size: 12px;
-        }
-
-        /* =========================
-           MAIN WINDOW
-        ==========================*/
-        QMainWindow {
-            background-color: #2a2f33;
-        }
-
-        /* =========================
-           MENU BAR
-        ==========================*/
-        QMenuBar {
-            background-color: qlineargradient(
-                x1:0, y1:0, x2:0, y2:1,
-                stop:0 #3a3f44,
-                stop:1 #2e3338
-            );
-            border-bottom: 1px solid #1f2327;
-            padding: 2px 6px;
-        }
-
-        QMenuBar::item {
-            background: transparent;
-            padding: 6px 10px;
-            border-radius: 4px;
-        }
-
-        QMenuBar::item:selected {
-            background-color: rgba(255, 255, 255, 0.08);
-        }
-
-        QMenu {
-            background-color: #2e3338;
-            border: 1px solid #1f2327;
-            padding: 6px 0;
-        }
-
-        QMenu::item {
-            padding: 6px 14px;
-            margin: 2px 8px;
-            border-radius: 4px;
-        }
-
-        QMenu::item:selected {
-            background-color: rgba(255, 255, 255, 0.1);
-        }
-
-        /* =========================
-           TOOLBARS
-        ==========================*/
-        QToolBar {
-            background-color: #2e3338;
-            border: 1px solid #1f2327;
-            spacing: 6px;
-            padding: 6px;
-        }
-
-        QToolBar QToolButton {
-            background: transparent;
-            border: none;
-            border-radius: 4px;
-            min-width: 30px;
-            min-height: 30px;
-            padding: 4px;
-        }
-
-        QToolBar QToolButton:hover {
-            background-color: rgba(255,255,255,0.08);
-        }
-
-        QToolBar QToolButton:checked,
-        QToolBar QToolButton:pressed {
-            background-color: rgba(0,160,255,0.35);
-        }
-
-        QToolBar QLabel {
-            background: transparent;
-            border: none;
-            padding: 0 6px;
-            color: #bfc4c9;
-        }
-
-        QToolBar QSlider {
-            background: transparent;
-        }
-
-        QToolBar QWidget {
-
-        }
-
-
-
-        QToolButton::menu-indicator {
-            image: none;
-            width: 0px;
-        }
-
-        QStatusBar {
-            background: #2a2f33;
-            border-top: 1px solid #1f2327;
-        }
-
-        QStatusBar QLabel {
-            background: transparent;
-            padding: 0 6px;
-            color: #bfc4c9;
-        }
-
-        /* =========================
-           PUSH BUTTONS
-        ==========================*/
-        QPushButton {
-            background-color: #3a3f44;
-            border: 1px solid #1f2327;
-            border-radius: 4px;
-            padding: 6px 14px;
-        }
-
-        QPushButton:hover {
-            background-color: #454b50;
-        }
-
-        QPushButton:pressed {
-            background-color: #2f73ff;
-            border-color: #2f73ff;
-        }
-
-        QPushButton:disabled {
-            color: #777;
-            background-color: #2a2f33;
-        }
-
-        /* =========================
-           DOCK WIDGETS (PANELS)
-        ==========================*/
-        QDockWidget {
-            background-color: #2e3338;
-            border: 1px solid #1f2327;
-        }
-
-        QDockWidget::title {
-            background-color: #3a3f44;
-            padding: 8px 10px;
-            font-weight: bold;
-            border-bottom: 1px solid #1f2327;
-        }
-
-        /* =========================
-           LISTS (LAYERS, EFFECTS)
-        ==========================*/
-        QListWidget {
-            background-color: #2a2f33;
-            border: none;
-            outline: none;
-        }
-
-        QListWidget::item {
-            padding: 8px 10px;
-            margin: 2px 6px;
-            border-radius: 4px;
-        }
-
-        QListWidget::item:hover {
-            background-color: rgba(255,255,255,0.06);
-        }
-
-        QListWidget::item:selected {
-            background-color: rgba(0,160,255,0.35);
-            color: #ffffff;
-        }
-
-        /* =========================
-           SLIDERS
-        ==========================*/
-        QSlider::groove:horizontal {
-            height: 4px;
-            background: rgba(255,255,255,0.2);
-            border-radius: 2px;
-        }
-
-        QSlider::sub-page:horizontal {
-            background: #2f73ff;
-            border-radius: 2px;
-        }
-
-        QSlider::handle:horizontal {
-            background: #ffffff;
-            width: 12px;
-            height: 12px;
-            border-radius: 6px;   /* 🔥 КЛЮЧОВЕ */
-            margin: -4px 0;       /* центрує */
-        }
-
-        QSlider::handle:horizontal:hover {
-            background: #ffffff;
-        }
-
-
-        /* =========================
-           SCROLL BARS
-        ==========================*/
-        QScrollBar:vertical {
-            background: transparent;
-            width: 10px;
-        }
-
-        QScrollBar::handle:vertical {
-            background: rgba(255,255,255,0.15);
-            border-radius: 4px;
-            min-height: 30px;
-        }
-
-        QScrollBar::handle:vertical:hover {
-            background: rgba(255,255,255,0.25);
-        }
-
-        QScrollBar::add-line,
-        QScrollBar::sub-line {
-            background: none;
-            height: 0;
-        }
-
-        QScrollBar::add-page,
-        QScrollBar::sub-page {
-            background: none;
-        }
-
-        /* =========================
-           FORM CONTROLS
-        ==========================*/
-        QLabel {
-            color: #d6d6d6;
-        }
-
-        QSpinBox {
-            background: transparent;
-            border: none;
-            border-bottom: 1px solid rgba(255,255,255,0.3);
-            padding: 2px 4px;
-            min-width: 40px;
-        }
-
-        QSpinBox:focus {
-            border-bottom: 1px solid #2f73ff;
-        }
-
-
-        QSpinBox::up-button,
-        QSpinBox::down-button {
-            width: 0;
-            height: 0;
-        }
-
-        #blendComboBox {
-            padding-left: 5px;
-            padding-top: 3px;
-            padding-bottom: 3px;
-        }
-    )");
-}
 
 
 void MainWindow::createCentralCanvas()
@@ -390,13 +121,16 @@ void MainWindow::createActions()
     m_exitAction = new QAction(tr("Exit"), this);
     connect(m_exitAction, &QAction::triggered, this, &QMainWindow::close);
 
-    m_undoAction = new QAction(tr("Undo"), this);
+    m_undoAction = new QAction(QIcon(":/icons/toolbar/undo.svg"), "", this);
+    m_undoAction->setToolTip("Undo");
     connect(m_undoAction, &QAction::triggered, this, &MainWindow::doUndo);
 
-    m_redoAction = new QAction(tr("Redo"), this);
+    m_redoAction = new QAction(QIcon(":/icons/toolbar/redo.svg"), "", this);
+    m_redoAction->setToolTip("Redo");
     connect(m_redoAction, &QAction::triggered, this, &MainWindow::doRedo);
 
-    m_cropAction = new QAction(tr("Crop"), this);
+    m_cropAction = new QAction(QIcon(":/icons/toolbar/crop.svg"), "", this);
+    m_cropAction->setToolTip("Crop");
     connect(m_cropAction, &QAction::triggered, this, [this]() {
         if (m_graphicsView) {
             m_graphicsView->setCropMode(true);
@@ -419,7 +153,54 @@ void MainWindow::createActions()
 void MainWindow::createTopBar()
 {
     QToolBar* tb{new QToolBar(this)};
-    tb->setIconSize(QSize(18, 18));
+
+    tb->setStyleSheet(R"(
+QToolBar {
+    spacing: 6px;
+    padding: 4px;
+}
+
+QToolButton {
+    background: transparent;
+    border: none;
+    padding: 0px 8px;
+    min-height: 32px;
+    max-height: 32px;
+}
+
+QToolButton:hover {
+    background: rgba(255,255,255,0.08);
+}
+
+QToolButton:pressed {
+    background: rgba(255,255,255,0.15);
+}
+QToolBar::separator {
+    background: rgba(255,255,255,0.18);
+    width: 1px;
+    height: 22px;
+    margin-left: 8px;
+    margin-right: 8px;
+    margin-top: 5px;
+    margin-bottom: 5px;
+}
+
+
+)");
+
+
+    tb->setIconSize(QSize(20, 20));
+    tb->setToolButtonStyle(Qt::ToolButtonIconOnly);
+
+    auto setupAction = [&](QAction* action) {
+        auto btn = qobject_cast<QToolButton*>(tb->widgetForAction(action));
+        if (!btn) return;
+
+        btn->setFixedSize(32, 32);
+        btn->setIconSize(QSize(20, 20));
+        btn->setAutoRaise(true);
+    };
+
     tb->setMovable(false);
     tb->setFloatable(false);
 
@@ -471,10 +252,10 @@ void MainWindow::createTopBar()
     tb->addWidget(viewBtn);
 
 
-    m_brushAction = new QAction("Brush", this);
+    m_brushAction = new QAction(QIcon(":/icons/toolbar/brush.svg"), "", this);
     m_brushAction->setCheckable(true);
 
-    m_eraserAction = new QAction("Eraser", this);
+    m_eraserAction = new QAction(QIcon(":/icons/toolbar/eraser.svg"), "", this);
     m_eraserAction->setCheckable(true);
 
     auto* toolGroup = new QActionGroup(this);
@@ -498,10 +279,17 @@ void MainWindow::createTopBar()
 
 
     tb->addSeparator();
-    auto rotateLeft = new QAction("RL", this);
-    auto rotateRight = new QAction("RR", this);
-    auto flipH = new QAction("FH", this);
-    auto flipV = new QAction("FV", this);
+    auto rotateLeft  = new QAction(QIcon(":/icons/toolbar/rleft.svg"), "", this);
+    auto rotateRight = new QAction(QIcon(":/icons/toolbar/rright.svg"), "", this);
+    auto flipH       = new QAction(QIcon(":/icons/toolbar/fliph.svg"), "", this);
+    auto flipV       = new QAction(QIcon(":/icons/toolbar/flipv.svg"), "", this);
+
+    rotateLeft->setToolTip("Rotate Left");
+    rotateRight->setToolTip("Rotate Right");
+    flipH->setToolTip("Flip Horizontal");
+    flipV->setToolTip("Flip Vertical");
+    m_brushAction->setToolTip("Brush");
+    m_eraserAction->setToolTip("Eraser");
 
     tb->addAction(rotateLeft);
     tb->addAction(rotateRight);
@@ -512,30 +300,51 @@ void MainWindow::createTopBar()
     spacer->setStyleSheet("background: transparent;");
     tb->addWidget(spacer);
 
+    setupAction(rotateLeft);
+    setupAction(rotateRight);
+    setupAction(flipH);
+    setupAction(flipV);
+    setupAction(m_brushAction);
+    setupAction(m_eraserAction);
 
-    QLabel* zoomLabel = new QLabel("Zoom:", tb);
-    zoomLabel->setAlignment(Qt::AlignRight| Qt::AlignVCenter);
-    zoomLabel->setFixedHeight(20);
 
-    m_scaleSlider = new QSlider(Qt::Horizontal, tb);
-    m_scaleSlider->setFixedHeight(20);
+    QLabel* zoomLabel = new QLabel;
+    zoomLabel->setPixmap(
+        QIcon(":/icons/toolbar/zoom.svg")
+            .pixmap(16, 16)
+        );
+    zoomLabel->setFixedSize(16, 16);
+    zoomLabel->setAlignment(Qt::AlignCenter);
+    zoomLabel->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+
+
+    m_scaleSlider = new QSlider(Qt::Horizontal);
     m_scaleSlider->setRange(10, 400);
     m_scaleSlider->setValue(100);
-    m_scaleSlider->setFixedWidth(200);
+    m_scaleSlider->setFixedWidth(180);
+    m_scaleSlider->setFixedHeight(18);
+    m_scaleSlider->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+    m_scaleSlider->setStyleSheet("margin-right: 5px; margin-left: 10px;");
 
-    auto* zoomLayout = new QHBoxLayout;
-    zoomLayout->setContentsMargins(6, 0, 6, 0);
-    zoomLayout->setSpacing(8);
-    zoomLayout->addWidget(zoomLabel, 0, Qt::AlignVCenter);
-    zoomLayout->addWidget(m_scaleSlider, 1, Qt::AlignVCenter);
 
-    auto* zoomWidget = new QWidget(tb);
+
+
+    QHBoxLayout* zoomLayout = new QHBoxLayout;
+    zoomLayout->setContentsMargins(0, 0, 0, 0);
+    zoomLayout->setSpacing(0);
+    zoomLayout->addWidget(zoomLabel);
+    zoomLayout->addWidget(m_scaleSlider);
+
+
+
+    QWidget* zoomWidget = new QWidget;
+    zoomWidget->setStyleSheet("background: transparent; ");
     zoomWidget->setLayout(zoomLayout);
-    zoomWidget->setAttribute(Qt::WA_StyledBackground, false);
-    zoomWidget->setStyleSheet("background: transparent;");
+    zoomWidget->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
 
-    tb->addWidget(zoomWidget);
 
+    QWidgetAction* m_zoomInAction = new QWidgetAction(tb);
+    m_zoomInAction->setDefaultWidget(zoomWidget);
 
     tb->addAction(m_zoomInAction);
 
@@ -605,6 +414,15 @@ void MainWindow::createFilterDock()
 
     m_filtersPanel = new FiltersPanel(this);
 
+
+    auto* scrollArea = new QScrollArea(this);  
+    scrollArea->setWidget(m_filtersPanel);
+    scrollArea->setWidgetResizable(true);
+    scrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    scrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    scrollArea->setFrameShape(QFrame::NoFrame);
+
+
     connect(m_filtersPanel, &FiltersPanel::pipelineChanged,
             this,
             [this](int index, FilterPipeline before, FilterPipeline after)
@@ -626,15 +444,9 @@ void MainWindow::createFilterDock()
             });
 
 
-    m_filterDock->setWidget(m_filtersPanel);
+    m_filterDock->setWidget(scrollArea);
+
     addDockWidget(Qt::LeftDockWidgetArea, m_filterDock);
-
-    connect(m_filtersPanel, &FiltersPanel::previewRequested,
-            this, [this]()
-            {
-                updateComposite();
-            });
-
 }
 
 
@@ -674,7 +486,6 @@ void MainWindow::createLayersDock()
     connect(m_layersPanel, &LayersPanel::clippedChanged,
             this, [this](int index, bool clipped)
             {
-                qDebug() << "UI clippedChanged:" << index << clipped;
 
                 auto cmd = std::make_unique<SetLayerClippedCommand>(
                     m_layerManager,
@@ -802,18 +613,25 @@ void MainWindow::keyReleaseEvent(QKeyEvent* event)
 
 void MainWindow::fitToScreen()
 {
+
+
     if (!m_graphicsView || !m_scaleSlider)
         return;
 
     auto* item = m_graphicsView->getPixmapItem();
-    if (!item)
-        return;
+
+
 
     m_graphicsView->resetTransform();
+    m_graphicsView->setTransform(QTransform());
+
+
 
     m_graphicsView->fitInView(item, Qt::KeepAspectRatio);
 
+
     const double scale = m_graphicsView->transform().m11();
+
 
     int sliderValue = static_cast<int>(scale * 100.0);
     sliderValue = std::clamp(
@@ -856,7 +674,14 @@ void MainWindow::updateComposite()
         return;
 
     QImage result = m_layerManager.composite();
-    if (!result.isNull())
+
+
+
+    if (result.isNull() || m_layerManager.layerCount() == 0)
+    {
+        m_graphicsView->clearPixmap();
+    }
+    else
     {
         m_graphicsView->setPixmap(QPixmap::fromImage(result));
     }
@@ -875,6 +700,14 @@ void MainWindow::handleAddLayer()
     auto command = std::make_unique<AddLayerCommand>(m_layerManager, layer);
     undoRedoStack.push(std::move(command));
     m_layerManager.setActiveLayerIndex(m_layerManager.layerCount() - 1);
+
+    if (m_filtersPanel) {
+        m_filtersPanel->setActiveLayer(
+            m_layerManager.activeLayer(),
+            m_layerManager.layerCount() - 1
+            );
+    }
+
     updateUndoRedoButtons();
 }
 
@@ -957,6 +790,14 @@ void MainWindow::handleAddImageLayer()
     undoRedoStack.push(std::move(command));
 
     m_layerManager.setActiveLayerIndex(insertIndex);
+
+    if (m_filtersPanel) {
+        m_filtersPanel->setActiveLayer(
+            m_layerManager.activeLayer(),
+            insertIndex
+            );
+    }
+
     updateUndoRedoButtons();
 }
 
@@ -1025,15 +866,32 @@ void MainWindow::handleOpacityChanged(int managerIndex, float opacity)
 void MainWindow::doUndo()
 {
     if (!undoRedoStack.canUndo()) return;
+
     undoRedoStack.undo();
     updateUndoRedoButtons();
+
+    if (m_filtersPanel) {
+        m_filtersPanel->setActiveLayer(
+            m_layerManager.activeLayer(),
+            m_layerManager.activeLayerIndex()
+            );
+    }
 }
+
 
 void MainWindow::doRedo()
 {
     if (!undoRedoStack.canRedo()) return;
+
     undoRedoStack.redo();
     updateUndoRedoButtons();
+
+    if (m_filtersPanel) {
+        m_filtersPanel->setActiveLayer(
+            m_layerManager.activeLayer(),
+            m_layerManager.activeLayerIndex()
+            );
+    }
 }
 
 
@@ -1076,8 +934,12 @@ void MainWindow::loadDocument(const QImage& img)
 {
     m_currentFilePath.clear();
 
+
+
     m_layerManager = LayerManager{};
     m_layerManager.setCanvasSize(img.size());
+
+
 
     m_layerManager.setOnChanged([this]() {
         if (m_brushTool)  m_brushTool->setTargetImage(activeLayerImage());
@@ -1096,6 +958,7 @@ void MainWindow::loadDocument(const QImage& img)
     baseLayer->setOffset(QPointF(0, 0));
     baseLayer->setScale(1.0f);
 
+
     m_layerManager.addLayer(baseLayer);
     m_layerManager.setActiveLayerIndex(0);
 
@@ -1107,7 +970,6 @@ void MainWindow::loadDocument(const QImage& img)
             );
     }
 }
-
 
 void MainWindow::resetEditorState()
 {

@@ -4,7 +4,9 @@
 #include <QWidget>
 #include <memory>
 #include <QPushButton>
-
+#include <QToolButton>
+#include "filterpipeline.h"
+#include <map>
 class QVBoxLayout;
 class FilterSlider;
 class QCheckBox;
@@ -40,13 +42,14 @@ private:
         std::function<void(FilterPipeline&, int)> apply
         );
 
+    FilterPipeline m_pipelineBeforeSlider;
+
     std::shared_ptr<Layer> m_activeLayer;
     int m_activeLayerIndex = -1;
 
     bool m_updating = false;
 
     CollapsibleSection* addSection(QVBoxLayout* root, const QString& title, const std::function<void(QVBoxLayout*)>& contentBuilder);
-
     FilterSlider* m_shadow = nullptr;
     FilterSlider* m_temperature = nullptr;
     FilterSlider* m_tint = nullptr;
@@ -70,7 +73,7 @@ private:
     FilterSlider* m_sharpen = nullptr;
     FilterSlider* m_gamma = nullptr;
 
-    QCheckBox* m_bw = nullptr;
+    QToolButton* m_bw = nullptr;
 };
 
 #endif // FILTERSPANEL_H

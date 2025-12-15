@@ -17,6 +17,7 @@
 #include <QToolButton>
 #include <QImage>
 #include <QSize>
+#include <QWidgetAction>
 
 #include "layermanager.h"
 #include "MyGraphicsView.h"
@@ -74,7 +75,7 @@ private:
 
     QAction* m_panAction {nullptr};
     QAction* m_fitToScreenAction {nullptr};
-    QAction* m_zoomInAction {nullptr};
+    QWidgetAction* m_zoomInAction {nullptr};
     QAction* m_zoomOutAction {nullptr};
     QAction* m_brushAction  {nullptr};
     QAction* m_eraserAction {nullptr};

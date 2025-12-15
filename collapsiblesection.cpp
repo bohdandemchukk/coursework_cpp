@@ -1,40 +1,31 @@
 #include "CollapsibleSection.h"
 #include <QLabel>
+#include <QStyle>
+
 
 CollapsibleSection::CollapsibleSection(const QString &title, QWidget *parent)
     : QWidget(parent)
     , m_expanded(false)
     , m_contentHeight(0)
 {
+    setObjectName("CollapsibleSection");
+    setAttribute(Qt::WA_StyledBackground, true);
     m_toggleButton = new QPushButton(this);
-    m_toggleButton->setText("▶ " + title);
+    m_toggleButton->setText(title);
+    m_toggleButton->setObjectName("SectionHeader");
+
     m_toggleButton->setCheckable(true);
-    m_toggleButton->setStyleSheet(R"(
-        QPushButton {
-            background-color: #2b2b2b;
-            color: #cccccc;
-            border: none;
-            text-align: left;
-            padding: 10px 15px;
-            font-weight: bold;
-            font-size: 12px;
-        }
-        QPushButton:hover {
-            background-color: #3a3a3a;
-        }
-        QPushButton:checked {
-            background-color: #3a3a3a;
-        }
-    )");
+    m_toggleButton->setIcon(QIcon(":/icons/filters/chevronright.svg"));
+    m_toggleButton->setIconSize(QSize(12, 12));
+
+
 
 
     m_contentArea = new QFrame(this);
-    m_contentArea->setStyleSheet(R"(
-        QFrame {
-            background-color: #252525;
-            border: none;
-        }
-    )");
+    m_contentArea->setObjectName("SectionContent");
+    m_contentArea->setAttribute(Qt::WA_StyledBackground, true);
+
+
     m_contentArea->setMaximumHeight(0);
     m_contentArea->setMinimumHeight(0);
 
@@ -52,13 +43,13 @@ CollapsibleSection::CollapsibleSection(const QString &title, QWidget *parent)
 
     connect(m_toggleButton, &QPushButton::toggled, this, [this](bool checked) {
         if (checked) {
-            m_toggleButton->setText(m_toggleButton->text().replace("▶", "▼"));
+            m_toggleButton->setIcon(QIcon(":/icons/filters/chevrondown.svg"));
             m_animation->setStartValue(0);
             m_animation->setEndValue(m_contentHeight);
             m_animation->start();
             m_expanded = true;
         } else {
-            m_toggleButton->setText(m_toggleButton->text().replace("▼", "▶"));
+            m_toggleButton->setIcon(QIcon(":/icons/filters/chevronright.svg"));
             m_animation->setStartValue(m_contentHeight);
             m_animation->setEndValue(0);
             m_animation->start();
@@ -81,3 +72,5 @@ void CollapsibleSection::toggle()
 {
     m_toggleButton->setChecked(!m_toggleButton->isChecked());
 }
+
+

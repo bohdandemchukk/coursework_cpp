@@ -17,6 +17,8 @@ public:
     void toggle();
     bool isExpanded() const { return m_expanded; }
 
+
+
 signals:
     void toggled(bool expanded);
 

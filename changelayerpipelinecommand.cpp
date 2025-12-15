@@ -1,5 +1,6 @@
 #include "changelayerpipelinecommand.h"
 #include "layer.h"
+#include <QDebug>
 
 ChangeLayerPipelineCommand::ChangeLayerPipelineCommand(
     LayerManager& manager,
@@ -15,22 +16,32 @@ ChangeLayerPipelineCommand::ChangeLayerPipelineCommand(
 
 void ChangeLayerPipelineCommand::execute()
 {
+    qDebug() << "ChangeLayerPipelineCommand::execute() - index:" << m_index;
     auto layer = std::dynamic_pointer_cast<AdjustmentLayer>(
         m_manager.layerAt(m_index)
         );
-    if (!layer) return;
+    if (!layer) {
+        qDebug() << "Layer not found or not adjustment!";
+        return;
+    }
 
+    qDebug() << "Setting pipeline to 'after' state";
     layer->pipeline() = m_after;
     m_manager.notifyLayerChanged();
 }
 
 void ChangeLayerPipelineCommand::undo()
 {
+    qDebug() << "ChangeLayerPipelineCommand::undo() - index:" << m_index;
     auto layer = std::dynamic_pointer_cast<AdjustmentLayer>(
         m_manager.layerAt(m_index)
         );
-    if (!layer) return;
+    if (!layer) {
+        qDebug() << "Layer not found or not adjustment!";
+        return;
+    }
 
+    qDebug() << "Setting pipeline to 'before' state";
     layer->pipeline() = m_before;
     m_manager.notifyLayerChanged();
 }

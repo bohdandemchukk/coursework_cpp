@@ -3,6 +3,11 @@
 #include <QHBoxLayout>
 #include <QLabel>
 
+#include <QPainter>
+
+
+
+
 LayersPanel::LayersPanel(QWidget* parent)
     : QWidget(parent)
 {
@@ -20,12 +25,12 @@ LayersPanel::LayersPanel(QWidget* parent)
     connect(m_list, &QListWidget::itemChanged, this, &LayersPanel::onItemChanged);
 
     auto* buttonsLayout = new QHBoxLayout();
-    m_addButton = new QPushButton(tr("Add"), this);
-    m_addAdjButton = new QPushButton("Add Adjustment");
-    m_addImageButton = new QPushButton(tr("Add Image Layer"), this);
-    m_deleteButton = new QPushButton(tr("Delete"), this);
-    m_moveUpButton = new QPushButton(tr("Up"), this);
-    m_moveDownButton = new QPushButton(tr("Down"), this);
+    m_addButton = new QPushButton(QIcon(":/icons/layerspanel/add.svg"), tr("Brush Layer"), this);
+    m_addAdjButton = new QPushButton(QIcon(":/icons/layerspanel/addfilter.svg"), tr("Adjustment Layer"), this);
+    m_addImageButton = new QPushButton(QIcon(":/icons/layerspanel/addimg.svg"), tr("Image Layer"), this);
+    m_deleteButton = new QPushButton(QIcon(":/icons/layerspanel/delete.svg"), tr("Delete"), this);
+    m_moveUpButton = new QPushButton(QIcon(":/icons/layerspanel/up.svg"), tr("Up"), this);
+    m_moveDownButton = new QPushButton(QIcon(":/icons/layerspanel/down.svg"), tr("Down"), this);
 
     buttonsLayout->addWidget(m_addButton);
     buttonsLayout->addWidget(m_addAdjButton);
@@ -133,6 +138,16 @@ void LayersPanel::setLayers(const std::vector<std::shared_ptr<Layer>>& layers, i
         item->setData(Qt::UserRole, i);
         item->setFlags(item->flags() | Qt::ItemIsUserCheckable | Qt::ItemIsSelectable | Qt::ItemIsEnabled);
         item->setCheckState(layer && layer->isVisible() ? Qt::Checked : Qt::Unchecked);
+
+        if (dynamic_cast<PixelLayer*>(layer.get()))
+        {
+            item->setIcon(QIcon(":/icons/layerspanel/layer.svg"));
+        }
+        else if (dynamic_cast<AdjustmentLayer*>(layer.get()))
+        {
+            item->setIcon(QIcon(":/icons/layerspanel/adjlayer.svg"));
+        }
+
         m_list->addItem(item);
 
         int uiRow = static_cast<int>(layers.size()) - 1 - i;

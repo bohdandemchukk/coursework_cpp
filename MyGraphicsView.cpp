@@ -29,6 +29,8 @@ MyGraphicsView::MyGraphicsView(QGraphicsScene* scene, QWidget* parent)
 
 void MyGraphicsView::setPixmap(const QPixmap& pixmap)
 {
+
+
     if (!pixmapItem) {
         pixmapItem = m_scene->addPixmap(pixmap);
 
@@ -42,11 +44,27 @@ void MyGraphicsView::setPixmap(const QPixmap& pixmap)
     }
 
     if (m_layerManager) {
+
         pixmapItem->setPos(m_layerManager->compositeOffset());
     } else {
+
         pixmapItem->setPos(0, 0);
     }
 
+
+
+    m_scene->setSceneRect(pixmapItem->sceneBoundingRect());
+
+
+}
+
+void MyGraphicsView::clearPixmap()
+{
+    if (pixmapItem) {
+        m_scene->removeItem(pixmapItem);
+        delete pixmapItem;
+        pixmapItem = nullptr;
+    }
     m_scene->setSceneRect(QRectF());
 }
 

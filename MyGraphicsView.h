@@ -49,7 +49,7 @@ public:
         return pixmapItem;
     }
     void setPixmap(const QPixmap &pixmap);
-
+    void clearPixmap();
 
     QPoint getCropStart() const {
         return m_cropStart;

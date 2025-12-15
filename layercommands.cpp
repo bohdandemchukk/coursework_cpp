@@ -1,4 +1,5 @@
 #include "layercommands.h"
+#include <qdebug>
 
 AddLayerCommand::AddLayerCommand(LayerManager &manager, std::shared_ptr<Layer> layer, int index)
     : m_manager(manager), m_layer(std::move(layer)), m_requestedIndex(index)
@@ -7,11 +8,14 @@ AddLayerCommand::AddLayerCommand(LayerManager &manager, std::shared_ptr<Layer> l
 
 void AddLayerCommand::execute()
 {
+    qDebug() << "AddLayerCommand::execute()";
     m_insertedIndex = m_manager.addLayer(m_layer, m_requestedIndex);
+    qDebug() << "Layer added at index:" << m_insertedIndex;
 }
 
 void AddLayerCommand::undo()
 {
+    qDebug() << "AddLayerCommand::undo() - removing index:" << m_insertedIndex;
     if (m_insertedIndex >= 0)
     {
         m_manager.removeLayer(m_insertedIndex);

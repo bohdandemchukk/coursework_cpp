@@ -12,18 +12,17 @@ class FilterSlider : public QWidget
 {
     Q_OBJECT
 public:
-    explicit FilterSlider(const QString &name, int min, int max, int defaultValue, QWidget *parent = nullptr);
+    explicit FilterSlider(const QString &name, const QIcon& icon, int min, int max, int defaultValue, QWidget *parent = nullptr);
 
 
     int m_defaultValue{};
 
     int getValue() const;
 
-
-
     void setValue(int value);
 
 signals:
+    void sliderPressed();
     void sliderReleased(int value);
     void valueChanged(int value);
 

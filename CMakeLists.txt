@@ -9,8 +9,8 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
+find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets Svg)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets Svg)
 
 set(PROJECT_SOURCES
         main.cpp
@@ -79,6 +79,8 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     changelayerpipelinecommand.h changelayerpipelinecommand.cpp
     filters/fastblur.h filters/fastblur.cpp
     filters/fastblurfilter.h filters/fastblurfilter.cpp
+    icons.qrc
+    styles.qrc
 
 
 
@@ -105,7 +107,7 @@ else()
 endif()
 
 target_include_directories(ImageEditor PRIVATE filters)
-target_link_libraries(ImageEditor PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
+target_link_libraries(ImageEditor PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::Svg)
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
 # If you are developing for iOS or macOS you should consider setting an

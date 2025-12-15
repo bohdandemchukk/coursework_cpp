@@ -1,0 +1,43 @@
+<RCC>
+    <qresource prefix="/">
+        <file>icons/toolbar/brush.svg</file>
+        <file>icons/toolbar/crop.svg</file>
+        <file>icons/toolbar/eraser.svg</file>
+        <file>icons/toolbar/fliph.svg</file>
+        <file>icons/toolbar/flipv.svg</file>
+        <file>icons/toolbar/rleft.svg</file>
+        <file>icons/toolbar/rright.svg</file>
+        <file>icons/toolbar/redo.svg</file>
+        <file>icons/toolbar/undo.svg</file>
+        <file>icons/toolbar/zoom.svg</file>
+        <file>icons/layerspanel/add.svg</file>
+        <file>icons/layerspanel/delete.svg</file>
+        <file>icons/layerspanel/down.svg</file>
+        <file>icons/layerspanel/layer.svg</file>
+        <file>icons/layerspanel/up.svg</file>
+        <file>icons/layerspanel/addfilter.svg</file>
+        <file>icons/layerspanel/addimg.svg</file>
+        <file>icons/filters/blur.svg</file>
+        <file>icons/filters/brightness.svg</file>
+        <file>icons/filters/gamma.svg</file>
+        <file>icons/filters/grain.svg</file>
+        <file>icons/filters/halfcircle.svg</file>
+        <file>icons/filters/saturation.svg</file>
+        <file>icons/filters/temperature.svg</file>
+        <file>icons/filters/tint.svg</file>
+        <file>icons/filters/vignette.svg</file>
+        <file>icons/filters/shadow.svg</file>
+        <file>icons/filters/clarity.svg</file>
+        <file>icons/filters/contrast.svg</file>
+        <file>icons/filters/exposure.svg</file>
+        <file>icons/filters/fastblur.svg</file>
+        <file>icons/filters/highlight.svg</file>
+        <file>icons/filters/vibrance.svg</file>
+        <file>icons/filters/sharpness.svg</file>
+        <file>icons/filters/fade.svg</file>
+        <file>icons/layerspanel/adjlayer.svg</file>
+        <file>icons/filters/chevrondown.svg</file>
+        <file>icons/filters/chevronright.svg</file>
+        <file>icons/filters/bw.svg</file>
+    </qresource>
+</RCC>
