@@ -137,7 +137,6 @@ private slots:
     void saveAs();
     void doUndo();
     void doRedo();
-    void onCropFinished(const QRect& rect);
     void fitToScreen();
     void updatePanMode();
 };

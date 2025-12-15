@@ -6,6 +6,8 @@
 #include <QGraphicsDropShadowEffect>
 #include "tool.h"
 #include "layercommands.h"
+#include "cropcommand.h"
+
 
 namespace {
 constexpr qreal kHandleSize = 12.0;
@@ -17,6 +19,7 @@ MyGraphicsView::MyGraphicsView(QGraphicsScene* scene, QWidget* parent)
     rubberBand(new QRubberBand(QRubberBand::Rectangle, this))
 {
     setMouseTracking(true);
+    setFocusPolicy(Qt::StrongFocus);
     setTransformationAnchor(QGraphicsView::AnchorViewCenter);
     setResizeAnchor(QGraphicsView::AnchorUnderMouse);
     setDragMode(QGraphicsView::NoDrag);
@@ -76,6 +79,9 @@ void MyGraphicsView::mousePressEvent(QMouseEvent* event)
     }
 
     if (getCropMode() && event->button() == Qt::LeftButton) {
+
+
+
         m_dragContext = DragContext::Crop;
         setCropStart(event->pos());
         rubberBand->setGeometry(QRect(getCropStart(), QSize()));
@@ -217,6 +223,52 @@ void MyGraphicsView::mouseMoveEvent(QMouseEvent* event)
 
 void MyGraphicsView::mouseReleaseEvent(QMouseEvent* event)
 {
+
+    if (m_dragContext == DragContext::Crop && m_layerManager)
+    {
+        rubberBand->hide();
+
+        QRect viewRect = QRect(getCropStart(), event->pos()).normalized();
+        QRectF sceneRect = mapToScene(viewRect).boundingRect();
+
+        auto layer = std::dynamic_pointer_cast<PixelLayer>(
+            m_layerManager->activeLayer());
+
+        if (layer) {
+            QRectF layerRect = layer->bounds();
+            QRectF cropScene = sceneRect.intersected(layerRect);
+
+            if (!cropScene.isEmpty()) {
+
+                QRect cropImg(
+                    int((cropScene.left() - layerRect.left()) / layer->scale()),
+                    int((cropScene.top()  - layerRect.top())  / layer->scale()),
+                    int(cropScene.width()  / layer->scale()),
+                    int(cropScene.height() / layer->scale())
+                    );
+
+                cropImg = cropImg.intersected(layer->image().rect());
+
+                if (!cropImg.isEmpty()) {
+
+                    auto cmd = std::make_unique<CropCommand>(
+                        *m_layerManager,
+                        cropImg
+                        );
+
+                    emit commandReady(cmd.release());
+
+                }
+            }
+        }
+
+        setCropMode(false);
+        m_dragContext = DragContext::None;
+        event->accept();
+        return;
+    }
+
+
     if (m_dragContext == DragContext::MoveLayer)
     {
         auto layer = std::dynamic_pointer_cast<PixelLayer>(
@@ -385,3 +437,23 @@ void MyGraphicsView::drawForeground(QPainter* painter, const QRectF&)
 
     painter->restore();
 }
+
+void MyGraphicsView::keyPressEvent(QKeyEvent* event)
+{
+    if (event->key() == Qt::Key_Escape)
+    {
+        if (m_dragContext == DragContext::Crop || getCropMode())
+        {
+            rubberBand->hide();
+            setCropMode(false);
+            m_dragContext = DragContext::None;
+            unsetCursor();
+
+            event->accept();
+            return;
+        }
+    }
+
+    QGraphicsView::keyPressEvent(event);
+}
+

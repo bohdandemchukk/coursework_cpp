@@ -352,9 +352,6 @@ void MainWindow::createCentralCanvas()
 
     setCentralWidget(m_graphicsView);
 
-    connect(m_graphicsView, &MyGraphicsView::cropFinished,
-            this, &MainWindow::onCropFinished);
-
     connect(m_graphicsView, &MyGraphicsView::commandReady,
             this,
             [this](Command* raw)
@@ -802,22 +799,6 @@ void MainWindow::keyReleaseEvent(QKeyEvent* event)
     QMainWindow::keyReleaseEvent(event);
 }
 
-void MainWindow::onCropFinished(const QRect& rect)
-{
-    QImage* target = activeLayerImage();
-    if (!target || target->isNull()) return;
-
-    auto cmd{std::make_unique<CropCommand>(
-        target,
-        rect,
-        [this]() {
-            this->updateComposite();
-        }
-        )};
-
-    undoRedoStack.push(std::move(cmd));
-    updateUndoRedoButtons();
-}
 
 void MainWindow::fitToScreen()
 {

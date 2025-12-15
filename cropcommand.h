@@ -2,22 +2,34 @@
 #define CROPCOMMAND_H
 
 #include "command.h"
+#include "layermanager.h"
 #include <QImage>
 #include <QRect>
 #include <functional>
 
-class CropCommand: public Command
+class CropCommand : public Command
 {
 public:
-    CropCommand(QImage* target, QRect newRect, std::function<void()> rebuildCallback);
-    void undo() override;
+    CropCommand(LayerManager& mgr, const QRect& cropRect);
+
     void execute() override;
+    void undo() override;
 
 private:
-    QImage* m_target{};
-    QImage m_oldValue{};
-    QRect m_newValue{};
-    std::function<void()> m_rebuildCallback{};
+    LayerManager& m_mgr;
+    QRect m_cropRect;
+
+    QSize m_oldCanvasSize;
+    QSize m_newCanvasSize;
+
+    struct LayerState {
+        std::shared_ptr<PixelLayer> layer;
+        QImage before;
+        QPointF oldOffset;
+    };
+
+    std::vector<LayerState> m_layers;
 };
+
 
 #endif // CROPCOMMAND_H
