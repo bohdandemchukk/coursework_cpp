@@ -3,42 +3,63 @@
 #include <QScrollBar>
 #include <QPainter>
 #include <algorithm>
-
+#include <QGraphicsDropShadowEffect>
 #include "tool.h"
 #include "layercommands.h"
 
 namespace {
-constexpr qreal kHandleSize = 8.0;
+constexpr qreal kHandleSize = 12.0;
 }
 
 MyGraphicsView::MyGraphicsView(QGraphicsScene* scene, QWidget* parent)
     : QGraphicsView(scene, parent),
+    m_scene(scene),
     rubberBand(new QRubberBand(QRubberBand::Rectangle, this))
 {
     setMouseTracking(true);
+    setTransformationAnchor(QGraphicsView::AnchorViewCenter);
+    setResizeAnchor(QGraphicsView::AnchorUnderMouse);
+    setDragMode(QGraphicsView::NoDrag);
+
 }
 
 
 void MyGraphicsView::setPixmap(const QPixmap& pixmap)
 {
-    if (!scene())
-        setScene(new QGraphicsScene(this));
-
     if (!pixmapItem) {
-        pixmapItem = scene()->addPixmap(pixmap);
+        pixmapItem = m_scene->addPixmap(pixmap);
+
+        auto* shadow = new QGraphicsDropShadowEffect;
+        shadow->setBlurRadius(40);
+        shadow->setOffset(0, 8);
+        shadow->setColor(QColor(0, 0, 0, 120));
+        pixmapItem->setGraphicsEffect(shadow);
     } else {
         pixmapItem->setPixmap(pixmap);
     }
 
-    scene()->setSceneRect(pixmap.rect());
+    if (m_layerManager) {
+        pixmapItem->setPos(m_layerManager->compositeOffset());
+    } else {
+        pixmapItem->setPos(0, 0);
+    }
+
+    m_scene->setSceneRect(QRectF());
 }
 
 
 void MyGraphicsView::wheelEvent(QWheelEvent* event)
 {
-    const qreal factor = event->angleDelta().y() > 0 ? 1.1 : 0.9;
-    scale(factor, factor);
-    emit zoomChanged(transform().m11());
+    setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
+
+    QTransform t = transform();
+    qreal factor = event->angleDelta().y() > 0 ? 1.1 : 0.9;
+    t.scale(factor, factor);
+    setTransform(t);
+
+    setTransformationAnchor(QGraphicsView::AnchorViewCenter);
+
+    emit zoomChanged(t.m11());
 }
 
 
@@ -95,6 +116,8 @@ void MyGraphicsView::mousePressEvent(QMouseEvent* event)
             if (handle >= 0) {
                 m_dragContext = DragContext::ScaleLayer;
                 m_dragLayerIndex = hitIndex;
+                m_scaleStartOffset = pixelLayer->offset();
+                m_scaleStartScale = pixelLayer->scale();
                 event->accept();
                 return;
             }
@@ -111,7 +134,6 @@ void MyGraphicsView::mousePressEvent(QMouseEvent* event)
     m_dragContext = DragContext::None;
     QGraphicsView::mousePressEvent(event);
 }
-
 
 void MyGraphicsView::mouseMoveEvent(QMouseEvent* event)
 {
@@ -152,6 +174,7 @@ void MyGraphicsView::mouseMoveEvent(QMouseEvent* event)
 
         QPointF delta = scenePos - m_dragStartScene;
         layer->setOffset(m_initialOffset + delta);
+
         viewport()->update();
         event->accept();
         return;
@@ -176,7 +199,9 @@ void MyGraphicsView::mouseMoveEvent(QMouseEvent* event)
 
         layer->setScale(newScale);
         layer->setOffset(newOffset);
+
         viewport()->update();
+
         event->accept();
         return;
     }
@@ -192,10 +217,45 @@ void MyGraphicsView::mouseMoveEvent(QMouseEvent* event)
 
 void MyGraphicsView::mouseReleaseEvent(QMouseEvent* event)
 {
-    if (m_dragContext == DragContext::MoveLayer ||
-        m_dragContext == DragContext::ScaleLayer)
+    if (m_dragContext == DragContext::MoveLayer)
     {
-        m_layerManager->notifyLayerChanged();
+        auto layer = std::dynamic_pointer_cast<PixelLayer>(
+            m_layerManager->layerAt(m_dragLayerIndex));
+
+        if (layer) {
+            QPointF finalOffset = layer->offset();
+
+            if (finalOffset != m_initialOffset) {
+                auto cmd = std::make_unique<MoveLayerCommand>(
+                    *m_layerManager,
+                    m_dragLayerIndex,
+                    m_initialOffset,
+                    finalOffset
+                    );
+                emit commandReady(cmd.release());
+            }
+        }
+    }
+
+    if (m_dragContext == DragContext::ScaleLayer)
+    {
+        auto layer = std::dynamic_pointer_cast<PixelLayer>(
+            m_layerManager->layerAt(m_dragLayerIndex));
+
+        if (layer) {
+            QPointF finalOffset = layer->offset();
+            float finalScale = layer->scale();
+
+            if (finalScale != m_scaleStartScale || finalOffset != m_scaleStartOffset) {
+                auto cmd = std::make_unique<TransformLayerCommand>(
+                    *m_layerManager,
+                    m_dragLayerIndex,
+                    m_scaleStartOffset, m_scaleStartScale,
+                    finalOffset, finalScale
+                    );
+                emit commandReady(cmd.release());
+            }
+        }
     }
 
     if (m_layerManager && event->button() == Qt::LeftButton)
@@ -248,17 +308,25 @@ QRectF MyGraphicsView::activeLayerBounds() const
     return layer ? layer->bounds() : QRectF{};
 }
 
+qreal MyGraphicsView::getHandleSize() const
+{
+    qreal zoom = transform().m11();
+    return kHandleSize / zoom;
+}
+
 QVector<QRectF> MyGraphicsView::handleRects(const QRectF& bounds) const
 {
     QVector<QRectF> rects;
     if (bounds.isNull())
         return rects;
 
-    const qreal half = kHandleSize / 2.0;
-    rects << QRectF(bounds.topLeft()     - QPointF(half, half), QSizeF(kHandleSize, kHandleSize))
-          << QRectF(bounds.topRight()    - QPointF(half, half), QSizeF(kHandleSize, kHandleSize))
-          << QRectF(bounds.bottomRight() - QPointF(half, half), QSizeF(kHandleSize, kHandleSize))
-          << QRectF(bounds.bottomLeft()  - QPointF(half, half), QSizeF(kHandleSize, kHandleSize));
+    const qreal handleSize = getHandleSize();
+    const qreal half = handleSize / 2.0;
+
+    rects << QRectF(bounds.topLeft()     - QPointF(half, half), QSizeF(handleSize, handleSize))
+          << QRectF(bounds.topRight()    - QPointF(half, half), QSizeF(handleSize, handleSize))
+          << QRectF(bounds.bottomRight() - QPointF(half, half), QSizeF(handleSize, handleSize))
+          << QRectF(bounds.bottomLeft()  - QPointF(half, half), QSizeF(handleSize, handleSize));
 
     return rects;
 }
@@ -294,6 +362,7 @@ MyGraphicsView::hitTestLayers(const QPointF& scenePos, int& outIndex) const
     return nullptr;
 }
 
+
 void MyGraphicsView::drawForeground(QPainter* painter, const QRectF&)
 {
     if (m_activeTool) return;
@@ -302,7 +371,11 @@ void MyGraphicsView::drawForeground(QPainter* painter, const QRectF&)
         return;
 
     painter->save();
-    painter->setPen(QPen(Qt::white, 1));
+
+    qreal zoom = transform().m11();
+    qreal penWidth = 1.0 / zoom;
+
+    painter->setPen(QPen(Qt::white, penWidth));
     painter->setBrush(Qt::NoBrush);
     painter->drawRect(bounds);
 

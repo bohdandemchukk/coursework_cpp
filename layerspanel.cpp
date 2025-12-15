@@ -66,6 +66,7 @@ LayersPanel::LayersPanel(QWidget* parent)
     auto* blendLayout = new QHBoxLayout();
     auto* blendLabel = new QLabel(tr("Blend"), this);
     m_blendModeCombo = new QComboBox(this);
+    m_blendModeCombo->setObjectName("blendComboBox");
     m_blendModeCombo->addItem("Normal");
     m_blendModeCombo->addItem("Multiply");
     m_blendModeCombo->addItem("Screen");

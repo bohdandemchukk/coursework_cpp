@@ -45,7 +45,7 @@ public:
     void notifyChanged();
     void setPainting(bool painting);
     bool isPainting() const;
-
+    QPointF compositeOffset() const { return m_compositeOffset; }
 
 private:
     mutable bool m_dirty = true;
@@ -58,6 +58,8 @@ private:
     QImage::Format m_format;
     int m_activeLayerIndex {-1};
     ChangeCallback m_onChanged {};
+
+    mutable QPointF m_compositeOffset;
 };
 
 #endif

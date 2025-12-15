@@ -195,3 +195,32 @@ void SetLayerClippedCommand::execute() {
         m_mgr.layerAt(m_index)->setClipped(m_new);
         m_mgr.notifyLayerChanged();
     }
+
+
+TransformLayerCommand::TransformLayerCommand(LayerManager& manager, int index, QPointF oldOffset, float oldScale, QPointF newOffset, float newScale)
+    : m_manager(manager), m_index(index),
+    m_oldOffset(oldOffset), m_oldScale(oldScale),
+    m_newOffset(newOffset), m_newScale(newScale)
+{}
+
+void TransformLayerCommand::execute()
+    {
+        auto layer = std::dynamic_pointer_cast<PixelLayer>(m_manager.layerAt(m_index));
+        if (!layer)
+            return;
+
+        layer->setOffset(m_newOffset);
+        layer->setScale(m_newScale);
+        m_manager.notifyLayerChanged();
+}
+
+void TransformLayerCommand::undo()
+    {
+        auto layer = std::dynamic_pointer_cast<PixelLayer>(m_manager.layerAt(m_index));
+        if (!layer)
+            return;
+
+        layer->setOffset(m_oldOffset);
+        layer->setScale(m_oldScale);
+        m_manager.notifyLayerChanged();
+}

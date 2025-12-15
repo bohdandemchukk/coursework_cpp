@@ -61,74 +61,276 @@ MainWindow::~MainWindow() = default;
 void MainWindow::applyGlobalStyle()
 {
     setStyleSheet(R"(
+        /* =========================
+           GLOBAL
+        ==========================*/
+        QWidget {
+            background-color: #2a2f33;
+            color: #d6d6d6;
+            font-family: 'Segoe UI', 'Inter', sans-serif;
+            font-size: 12px;
+        }
+
+        /* =========================
+           MAIN WINDOW
+        ==========================*/
         QMainWindow {
-            background-color: #1e1e1e;
+            background-color: #2a2f33;
         }
+
+        /* =========================
+           MENU BAR
+        ==========================*/
         QMenuBar {
-            background-color: #2b2b2b;
-            color: #dddddd;
-            border-bottom: 1px solid #1a1a1a;
+            background-color: qlineargradient(
+                x1:0, y1:0, x2:0, y2:1,
+                stop:0 #3a3f44,
+                stop:1 #2e3338
+            );
+            border-bottom: 1px solid #1f2327;
+            padding: 2px 6px;
         }
+
         QMenuBar::item {
-            padding: 4px 12px;
             background: transparent;
+            padding: 6px 10px;
+            border-radius: 4px;
         }
+
         QMenuBar::item:selected {
-            background-color: #3a3a3a;
+            background-color: rgba(255, 255, 255, 0.08);
         }
+
         QMenu {
-            background-color: #2b2b2b;
-            color: #dddddd;
-            border: 1px solid #1a1a1a;
+            background-color: #2e3338;
+            border: 1px solid #1f2327;
+            padding: 6px 0;
         }
+
+        QMenu::item {
+            padding: 6px 14px;
+            margin: 2px 8px;
+            border-radius: 4px;
+        }
+
         QMenu::item:selected {
-            background-color: #3a3a3a;
+            background-color: rgba(255, 255, 255, 0.1);
         }
+
+        /* =========================
+           TOOLBARS
+        ==========================*/
         QToolBar {
-            background-color: #2b2b2b;
+            background-color: #2e3338;
+            border: 1px solid #1f2327;
+            spacing: 6px;
+            padding: 6px;
+        }
+
+        QToolBar QToolButton {
+            background: transparent;
             border: none;
-            spacing: 5px;
+            border-radius: 4px;
+            min-width: 30px;
+            min-height: 30px;
             padding: 4px;
         }
-        QToolButton {
-            background-color: transparent;
-            color: #dddddd;
+
+        QToolBar QToolButton:hover {
+            background-color: rgba(255,255,255,0.08);
+        }
+
+        QToolBar QToolButton:checked,
+        QToolBar QToolButton:pressed {
+            background-color: rgba(0,160,255,0.35);
+        }
+
+        QToolBar QLabel {
+            background: transparent;
             border: none;
-            padding: 4px 6px;
+            padding: 0 6px;
+            color: #bfc4c9;
         }
-        QToolButton:hover {
-            background-color: #3a3a3a;
-            border-radius: 3px;
+
+        QToolBar QSlider {
+            background: transparent;
         }
-        QDockWidget {
-            background-color: #252525;
-            color: #cccccc;
+
+        QToolBar QWidget {
+
         }
-        QDockWidget::title {
-            background-color: #2b2b2b;
-            padding: 6px;
-            text-align: center;
-        }
-        QLabel {
-            color: #cccccc;
-        }
+
+
 
         QToolButton::menu-indicator {
             image: none;
             width: 0px;
         }
 
+        QStatusBar {
+            background: #2a2f33;
+            border-top: 1px solid #1f2327;
+        }
+
+        QStatusBar QLabel {
+            background: transparent;
+            padding: 0 6px;
+            color: #bfc4c9;
+        }
+
+        /* =========================
+           PUSH BUTTONS
+        ==========================*/
+        QPushButton {
+            background-color: #3a3f44;
+            border: 1px solid #1f2327;
+            border-radius: 4px;
+            padding: 6px 14px;
+        }
+
+        QPushButton:hover {
+            background-color: #454b50;
+        }
+
+        QPushButton:pressed {
+            background-color: #2f73ff;
+            border-color: #2f73ff;
+        }
+
+        QPushButton:disabled {
+            color: #777;
+            background-color: #2a2f33;
+        }
+
+        /* =========================
+           DOCK WIDGETS (PANELS)
+        ==========================*/
+        QDockWidget {
+            background-color: #2e3338;
+            border: 1px solid #1f2327;
+        }
+
+        QDockWidget::title {
+            background-color: #3a3f44;
+            padding: 8px 10px;
+            font-weight: bold;
+            border-bottom: 1px solid #1f2327;
+        }
+
+        /* =========================
+           LISTS (LAYERS, EFFECTS)
+        ==========================*/
+        QListWidget {
+            background-color: #2a2f33;
+            border: none;
+            outline: none;
+        }
+
+        QListWidget::item {
+            padding: 8px 10px;
+            margin: 2px 6px;
+            border-radius: 4px;
+        }
+
+        QListWidget::item:hover {
+            background-color: rgba(255,255,255,0.06);
+        }
+
+        QListWidget::item:selected {
+            background-color: rgba(0,160,255,0.35);
+            color: #ffffff;
+        }
+
+        /* =========================
+           SLIDERS
+        ==========================*/
+        QSlider::groove:horizontal {
+            height: 4px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 2px;
+        }
+
+        QSlider::sub-page:horizontal {
+            background: #2f73ff;
+            border-radius: 2px;
+        }
+
+        QSlider::handle:horizontal {
+            background: #ffffff;
+            width: 12px;
+            height: 12px;
+            border-radius: 6px;   /* 🔥 КЛЮЧОВЕ */
+            margin: -4px 0;       /* центрує */
+        }
+
+        QSlider::handle:horizontal:hover {
+            background: #ffffff;
+        }
+
+
+        /* =========================
+           SCROLL BARS
+        ==========================*/
+        QScrollBar:vertical {
+            background: transparent;
+            width: 10px;
+        }
+
+        QScrollBar::handle:vertical {
+            background: rgba(255,255,255,0.15);
+            border-radius: 4px;
+            min-height: 30px;
+        }
+
+        QScrollBar::handle:vertical:hover {
+            background: rgba(255,255,255,0.25);
+        }
+
+        QScrollBar::add-line,
+        QScrollBar::sub-line {
+            background: none;
+            height: 0;
+        }
+
+        QScrollBar::add-page,
+        QScrollBar::sub-page {
+            background: none;
+        }
+
+        /* =========================
+           FORM CONTROLS
+        ==========================*/
+        QLabel {
+            color: #d6d6d6;
+        }
+
+        QSpinBox {
+            background: transparent;
+            border: none;
+            border-bottom: 1px solid rgba(255,255,255,0.3);
+            padding: 2px 4px;
+            min-width: 40px;
+        }
+
+        QSpinBox:focus {
+            border-bottom: 1px solid #2f73ff;
+        }
+
+
         QSpinBox::up-button,
         QSpinBox::down-button {
-            width: 0px;
-            height: 0px;
-            border: none;
+            width: 0;
+            height: 0;
         }
-        QSpinBox {
-            padding-right: 0px;
+
+        #blendComboBox {
+            padding-left: 5px;
+            padding-top: 3px;
+            padding-bottom: 3px;
         }
     )");
 }
+
 
 void MainWindow::createCentralCanvas()
 {
@@ -136,12 +338,18 @@ void MainWindow::createCentralCanvas()
     m_graphicsView = new MyGraphicsView(m_scene, this);
     m_graphicsView->setLayerManager(&m_layerManager);
 
-    m_graphicsView->setStyleSheet(R"(
-        QGraphicsView {
-            background-color: #111111;
-            border: none;
-        }
-    )");
+    QPixmap checker(40, 40);
+    checker.fill(QColor("#1e2226"));
+
+    QPainter p(&checker);
+    p.fillRect(0, 0, 20, 20, QColor("#252a2f"));
+    p.fillRect(20, 20, 20, 20, QColor("#252a2f"));
+    p.end();
+
+    m_graphicsView->setBackgroundBrush(QBrush(checker));
+    m_graphicsView->setStyleSheet("QGraphicsView { border: none; }");
+
+
     setCentralWidget(m_graphicsView);
 
     connect(m_graphicsView, &MyGraphicsView::cropFinished,
@@ -291,40 +499,50 @@ void MainWindow::createTopBar()
 
     tb->addAction(m_cropAction);
 
+
     tb->addSeparator();
-
-    QLabel* zoomLabel{new QLabel("Zoom:", tb)};
-    tb->addWidget(zoomLabel);
-
-    m_scaleSlider = new QSlider(Qt::Horizontal, tb);
-
-    connect(m_scaleSlider, &QSlider::valueChanged, this, [this](int value) {
-        if (m_isUpdatingSlider) return;
-        if (!m_graphicsView) return;
-
-        double scale{static_cast<double>(value) / 100.0};
-
-        QTransform t{};
-        t.scale(scale, scale);
-        m_graphicsView->setTransform(t);
-    });
-
-    m_scaleSlider->setRange(10, 400);
-    m_scaleSlider->setValue(100);
-    m_scaleSlider->setFixedWidth(150);
-    tb->addWidget(m_scaleSlider);
-
-    tb->addAction(m_zoomInAction);
-
-    auto rotateLeft = new QAction("⟲", this);
-    auto rotateRight = new QAction("⟳", this);
-    auto flipH = new QAction("⇋", this);
-    auto flipV = new QAction("⇵", this);
+    auto rotateLeft = new QAction("RL", this);
+    auto rotateRight = new QAction("RR", this);
+    auto flipH = new QAction("FH", this);
+    auto flipV = new QAction("FV", this);
 
     tb->addAction(rotateLeft);
     tb->addAction(rotateRight);
     tb->addAction(flipH);
     tb->addAction(flipV);
+    QWidget* spacer = new QWidget(tb);
+    spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    spacer->setStyleSheet("background: transparent;");
+    tb->addWidget(spacer);
+
+
+    QLabel* zoomLabel = new QLabel("Zoom:", tb);
+    zoomLabel->setAlignment(Qt::AlignRight| Qt::AlignVCenter);
+    zoomLabel->setFixedHeight(20);
+
+    m_scaleSlider = new QSlider(Qt::Horizontal, tb);
+    m_scaleSlider->setFixedHeight(20);
+    m_scaleSlider->setRange(10, 400);
+    m_scaleSlider->setValue(100);
+    m_scaleSlider->setFixedWidth(200);
+
+    auto* zoomLayout = new QHBoxLayout;
+    zoomLayout->setContentsMargins(6, 0, 6, 0);
+    zoomLayout->setSpacing(8);
+    zoomLayout->addWidget(zoomLabel, 0, Qt::AlignVCenter);
+    zoomLayout->addWidget(m_scaleSlider, 1, Qt::AlignVCenter);
+
+    auto* zoomWidget = new QWidget(tb);
+    zoomWidget->setLayout(zoomLayout);
+    zoomWidget->setAttribute(Qt::WA_StyledBackground, false);
+    zoomWidget->setStyleSheet("background: transparent;");
+
+    tb->addWidget(zoomWidget);
+
+
+    tb->addAction(m_zoomInAction);
+
+
 
     connect(rotateLeft, &QAction::triggered, this, [this] {
         int i = m_layerManager.activeLayerIndex();
@@ -381,6 +599,11 @@ void MainWindow::createTopBar()
 void MainWindow::createFilterDock()
 {
     m_filterDock = new QDockWidget(tr("Filters"), this);
+    m_filterDock->setFeatures(
+        QDockWidget::DockWidgetMovable |
+        QDockWidget::DockWidgetFloatable
+        );
+
     m_filterDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
 
     m_filtersPanel = new FiltersPanel(this);
@@ -421,6 +644,10 @@ void MainWindow::createFilterDock()
 void MainWindow::createLayersDock()
 {
     m_layersDock = new QDockWidget(tr("Layers"), this);
+    m_layersDock->setFeatures(
+        QDockWidget::DockWidgetMovable |
+        QDockWidget::DockWidgetFloatable
+        );
     m_layersPanel = new LayersPanel(this);
     m_layersDock->setWidget(m_layersPanel);
     addDockWidget(Qt::RightDockWidgetArea, m_layersDock);
@@ -594,27 +821,29 @@ void MainWindow::onCropFinished(const QRect& rect)
 
 void MainWindow::fitToScreen()
 {
-    if (!m_graphicsView || !m_scaleSlider) return;
+    if (!m_graphicsView || !m_scaleSlider)
+        return;
 
-    const QSize imgSize{m_layerManager.canvasSize()};
-    const QSize viewSize{m_graphicsView->viewport()->size()};
+    auto* item = m_graphicsView->getPixmapItem();
+    if (!item)
+        return;
 
-    if (imgSize.isEmpty() || viewSize.isEmpty()) return;
+    m_graphicsView->resetTransform();
 
-    const double scaleX{static_cast<double>(viewSize.width())  / imgSize.width()};
-    const double scaleY{static_cast<double>(viewSize.height()) / imgSize.height()};
-    const double scale{std::min(scaleX, scaleY)};
+    m_graphicsView->fitInView(item, Qt::KeepAspectRatio);
 
-    int sliderValue{static_cast<int>(scale * 100.0)};
-    sliderValue = std::clamp(sliderValue, m_scaleSlider->minimum(), m_scaleSlider->maximum());
+    const double scale = m_graphicsView->transform().m11();
+
+    int sliderValue = static_cast<int>(scale * 100.0);
+    sliderValue = std::clamp(
+        sliderValue,
+        m_scaleSlider->minimum(),
+        m_scaleSlider->maximum()
+        );
 
     m_isUpdatingSlider = true;
     m_scaleSlider->setValue(sliderValue);
     m_isUpdatingSlider = false;
-
-    QTransform t{};
-    t.scale(scale, scale);
-    m_graphicsView->setTransform(t);
 }
 
 
@@ -880,13 +1109,15 @@ void MainWindow::loadDocument(const QImage& img)
         updateComposite();
     });
 
-    auto baseLayer = std::make_shared<PixelLayer>(
-        tr("Background"),
-        img.convertToFormat(QImage::Format_ARGB32_Premultiplied)
-        );
+    QImage converted = img.convertToFormat(QImage::Format_ARGB32_Premultiplied);
+
+    auto baseLayer = std::make_shared<PixelLayer>(tr("Background"), converted);
+    baseLayer->setOffset(QPointF(0, 0));
+    baseLayer->setScale(1.0f);
 
     m_layerManager.addLayer(baseLayer);
     m_layerManager.setActiveLayerIndex(0);
+
     if (m_filtersPanel)
     {
         m_filtersPanel->setActiveLayer(
@@ -894,7 +1125,6 @@ void MainWindow::loadDocument(const QImage& img)
             m_layerManager.activeLayerIndex()
             );
     }
-
 }
 
 
@@ -906,8 +1136,9 @@ void MainWindow::resetEditorState()
 
 void MainWindow::finalizeDocumentLoad()
 {
-    fitToScreen();
+
     initializeTools();
     updateUndoRedoButtons();
+    fitToScreen();
 }
 

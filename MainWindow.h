@@ -42,7 +42,7 @@ protected:
 
 private:
 
-
+    QPointF m_compositeOffset;
     QGraphicsScene* m_scene {nullptr};
     MyGraphicsView* m_graphicsView {nullptr};
 

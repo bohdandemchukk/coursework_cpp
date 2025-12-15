@@ -40,6 +40,8 @@ public:
     bool isClipped() const { return m_clipped; }
     void setClipped(bool v) { m_clipped = v; }
 
+    virtual QRectF bounds() const = 0;
+
     virtual LayerType type() const = 0;
 
 private:
@@ -93,6 +95,9 @@ public:
     const FilterPipeline& pipeline() const;
     const QImage& cachedProcess(const QImage& input) const;
     void markDirty();
+
+    QRectF bounds() const;
+
 
 private:
     mutable bool m_dirty = true;

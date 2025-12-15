@@ -103,4 +103,10 @@ const QImage& AdjustmentLayer::cachedProcess(const QImage& input) const
     return m_cached;
 }
 
+QRectF AdjustmentLayer::bounds() const
+{
+    return QRectF();
+}
+
+
 

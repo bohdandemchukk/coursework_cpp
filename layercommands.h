@@ -146,3 +146,22 @@ private:
     int m_index;
     bool m_old, m_new;
 };
+
+
+class TransformLayerCommand : public Command
+{
+public:
+    TransformLayerCommand(LayerManager& manager,
+                          int index,
+                          QPointF oldOffset, float oldScale,
+                          QPointF newOffset, float newScale);
+
+    void execute() override;
+    void undo() override;
+
+private:
+    LayerManager& m_manager;
+    int m_index;
+    QPointF m_oldOffset, m_newOffset;
+    float m_oldScale, m_newScale;
+};

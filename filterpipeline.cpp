@@ -17,8 +17,6 @@ FilterPipeline& FilterPipeline::operator=(const FilterPipeline& other)
     for (const auto& f : other.filters)
         filters.push_back(f->clone());
 
-    qDebug() << "Pipeline filters count:" << filters.size();
-
     return *this;
 }
 

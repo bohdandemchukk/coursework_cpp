@@ -6,6 +6,8 @@ FilterSlider::FilterSlider(const QString &name, int min, int max, int defaultVal
     : QWidget(parent), m_defaultValue(defaultValue)
 {
     QLabel* label = new QLabel(name, this);
+    setAttribute(Qt::WA_StyledBackground, true);
+    setStyleSheet("background: transparent;");
 
     label->setFixedWidth(70);
     label->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
@@ -27,12 +29,24 @@ FilterSlider::FilterSlider(const QString &name, int min, int max, int defaultVal
         "QPushButton:hover { background-color: #444; }"
         );
 
+    auto* sliderRow = new QHBoxLayout;
+    sliderRow->setSpacing(6);
+    sliderRow->setContentsMargins(0, 0, 0, 0);
+
+    m_spinBox->setFixedWidth(48);
+
+    sliderRow->addWidget(m_slider, 1);
+    sliderRow->addWidget(m_spinBox, 0);
+
+
     auto* layout = new QHBoxLayout(this);
-    layout->addWidget(label);
-    layout->addWidget(m_slider);
-    layout->addWidget(m_spinBox);
-    layout->addWidget(resetButton);
     layout->setContentsMargins(0, 0, 0, 0);
+    layout->setSpacing(8);
+
+    layout->addWidget(label);
+    layout->addLayout(sliderRow, 1);
+    layout->addWidget(resetButton);
+
     setLayout(layout);
 
     connect(m_slider, &QSlider::valueChanged, m_spinBox, &QSpinBox::setValue);

@@ -136,7 +136,6 @@ void LayerManager::setPainting(bool painting)
         return;
     m_isPainting = painting;
 
-
     markDirty();
 }
 
@@ -199,38 +198,38 @@ static QRgb blendPixel(QRgb base, QRgb adj, float opacity, BlendMode mode)
 
 QImage LayerManager::composite() const
 {
+    if (m_layers.empty())
+        return QImage();
+
     if (!m_canvasSize.isValid())
         return QImage();
 
-    if (!m_dirty && !m_cachedComposite.isNull())
-        return m_cachedComposite;
-
     QImage result(m_canvasSize, m_format);
     result.fill(Qt::transparent);
-    Q_ASSERT(result.format() == QImage::Format_ARGB32_Premultiplied);
+    m_compositeOffset = QPointF(0, 0);
+
+    QPainter painter(&result);
+    painter.setClipRect(QRect(0, 0, m_canvasSize.width(), m_canvasSize.height()));
 
     bool hasPending = false;
     QImage pendingImg;
     float pendingOpacity = 1.0f;
     BlendMode pendingBlend = BlendMode::Normal;
-    QPointF pendingOffset {0.0, 0.0};
+    QPointF pendingOffset;
     float pendingScale = 1.0f;
-
-    QPainter painter(&result);
 
     auto flushPending = [&]() {
         if (!hasPending) return;
 
+        painter.save();
         painter.setOpacity(pendingOpacity);
         painter.setCompositionMode(toQtMode(pendingBlend));
-        painter.save();
         painter.translate(pendingOffset);
         painter.scale(pendingScale, pendingScale);
         painter.drawImage(QPoint(0, 0), pendingImg);
         painter.restore();
 
         hasPending = false;
-        pendingImg = QImage();
     };
 
     const bool painting = m_isPainting;
@@ -252,23 +251,16 @@ QImage LayerManager::composite() const
                 const auto& next = *it2;
                 if (!next || !next->isVisible())
                     continue;
-
                 if (next->type() == LayerType::Pixel)
                     break;
-
-                if (next->type() == LayerType::Adjustment) {
-                    auto a = std::static_pointer_cast<AdjustmentLayer>(next);
-                    if (!a->isClipped())
-                        break;
+                if (next->type() == LayerType::Adjustment &&
+                    std::static_pointer_cast<AdjustmentLayer>(next)->isClipped())
                     willBeClipped = true;
-                }
             }
 
-
-            const bool needCopy = (!painting && willBeClipped);
-            pendingImg = needCopy ? pixel->image().copy()
-                                  : pixel->image();
-
+            pendingImg     = (!painting && willBeClipped)
+                             ? pixel->image().copy()
+                             : pixel->image();
             pendingOpacity = pixel->opacity();
             pendingBlend   = pixel->blendMode();
             pendingOffset  = pixel->offset();
@@ -288,35 +280,22 @@ QImage LayerManager::composite() const
             {
                 if (!hasPending) continue;
 
-                QImage adjusted = adj->pipeline().process(pendingImg);
+                QPointF savedOffset = pendingOffset;
+                float savedScale = pendingScale;
 
+                QImage adjusted = adj->pipeline().process(pendingImg);
 
                 for (int y = 0; y < pendingImg.height(); ++y) {
                     const QRgb* src = reinterpret_cast<const QRgb*>(pendingImg.constScanLine(y));
                     QRgb* dst = reinterpret_cast<QRgb*>(adjusted.scanLine(y));
-
-                    for (int x = 0; x < pendingImg.width(); ++x) {
-                        dst[x] = qRgba(
-                            qRed(dst[x]),
-                            qGreen(dst[x]),
-                            qBlue(dst[x]),
-                            qAlpha(src[x])
-                            );
-                    }
+                    for (int x = 0; x < pendingImg.width(); ++x)
+                        dst[x] = qRgba(qRed(dst[x]), qGreen(dst[x]), qBlue(dst[x]), qAlpha(src[x]));
                 }
 
                 pendingImg = std::move(adjusted);
-
-                pendingOpacity = 1.0f;
-                pendingBlend   = BlendMode::Normal;
-                pendingOffset  = QPointF(0, 0);
-                pendingScale   = 1.0f;
-                hasPending = true;
-                continue;
+                pendingOffset = savedOffset;
+                pendingScale = savedScale;
             }
-
-
-
             else
             {
                 flushPending();
@@ -336,10 +315,7 @@ QImage LayerManager::composite() const
     }
 
     flushPending();
-
-    m_cachedComposite = result;
-    m_dirty = false;
-    return m_cachedComposite;
+    return result;
 }
 
 void LayerManager::markDirty()

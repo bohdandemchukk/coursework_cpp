@@ -43,9 +43,11 @@ public:
         return m_pixmap;
     }
 
-    QGraphicsPixmapItem *pixmapItem{};
 
 
+    QGraphicsPixmapItem* getPixmapItem() {
+        return pixmapItem;
+    }
     void setPixmap(const QPixmap &pixmap);
 
 
@@ -109,8 +111,8 @@ private:
     std::shared_ptr<PixelLayer> hitTestLayers(const QPointF& scenePos, int& outIndex) const;
 
     QPixmap m_pixmap{};
-
-
+    QPointF m_scaleStartOffset;
+    float m_scaleStartScale {1.0f};
     bool m_cropMode {false};
     QPoint m_cropStart {};
 
@@ -119,8 +121,9 @@ private:
     QRubberBand *rubberBand{nullptr};
 
     Tool* m_activeTool {nullptr};
-
-
+    qreal getHandleSize() const;
+    QGraphicsScene* m_scene {nullptr};
+    QGraphicsPixmapItem *pixmapItem{};
     DragContext m_dragContext = DragContext::None;
     DragMode m_dragMode {DragMode::None};
     LayerManager* m_layerManager {nullptr};
