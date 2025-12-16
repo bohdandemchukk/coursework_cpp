@@ -24,29 +24,56 @@ LayersPanel::LayersPanel(QWidget* parent)
     });
     connect(m_list, &QListWidget::itemChanged, this, &LayersPanel::onItemChanged);
 
-    auto* buttonsLayout = new QVBoxLayout();
-    buttonsLayout->setObjectName("ButtonsLayout");
-    m_addButton = new QPushButton(QIcon(":/icons/layerspanel/add.svg"), tr("Brush Layer"), this);
-    m_addAdjButton = new QPushButton(QIcon(":/icons/layerspanel/addfilter.svg"), tr("Adjustment Layer"), this);
-    m_addImageButton = new QPushButton(QIcon(":/icons/layerspanel/addimg.svg"), tr("Image Layer"), this);
-    m_deleteButton = new QPushButton(QIcon(":/icons/layerspanel/delete.svg"), tr("Delete"), this);
-    m_moveUpButton = new QPushButton(QIcon(":/icons/layerspanel/up.svg"), tr("Up"), this);
-    m_moveDownButton = new QPushButton(QIcon(":/icons/layerspanel/down.svg"), tr("Down"), this);
+    auto* buttonsWidget = new QWidget(this);
+    buttonsWidget->setObjectName("ButtonsLayout");
+
+    auto* buttonsLayout = new QVBoxLayout(buttonsWidget);
+    buttonsLayout->setSpacing(6);
+    buttonsLayout->setContentsMargins(0, 0, 0, 0);
+
+    auto makeButton = [&](const QString& icon, const QString& text) {
+        auto* b = new QToolButton(buttonsWidget);
+        b->setIcon(QIcon(icon));
+        b->setText(text);
+        b->setIconSize(QSize(20, 20));
+        b->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+        b->setAutoRaise(false);
+        b->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+        b->setMinimumHeight(30);
+        return b;
+    };
+
+
+    m_addButton       = makeButton(":/icons/layerspanel/add.svg",       tr("Brush Layer"));
+    m_addAdjButton    = makeButton(":/icons/layerspanel/addfilter.svg", tr("Adjustment Layer"));
+    m_addImageButton  = makeButton(":/icons/layerspanel/addimg.svg",    tr("Image Layer"));
+    m_deleteButton    = makeButton(":/icons/layerspanel/delete.svg",    tr("Delete"));
+    m_moveUpButton    = makeButton(":/icons/layerspanel/up.svg",        tr("Up"));
+    m_moveDownButton  = makeButton(":/icons/layerspanel/down.svg",      tr("Down"));
+
+
+    //m_addButton = new QToolButton(QIcon(":/icons/layerspanel/add.svg"), tr("Brush Layer"));
+    //m_addAdjButton = new QToolButton(QIcon(":/icons/layerspanel/addfilter.svg"), tr("Adjustment Layer"));
+    //m_addImageButton = new QToolButton(QIcon(":/icons/layerspanel/addimg.svg"), tr("Image Layer"));
+    //m_deleteButton = new QToolButton(QIcon(":/icons/layerspanel/delete.svg"), tr("Delete"));
+    //m_moveUpButton = new QToolButton(QIcon(":/icons/layerspanel/up.svg"), tr("Up"));
+    //m_moveDownButton = new QToolButton(QIcon(":/icons/layerspanel/down.svg"), tr("Down"));
 
     buttonsLayout->addWidget(m_addButton);
     buttonsLayout->addWidget(m_addAdjButton);
     buttonsLayout->addWidget(m_addImageButton);
+    buttonsLayout->addSpacing(4);
     buttonsLayout->addWidget(m_deleteButton);
     buttonsLayout->addWidget(m_moveUpButton);
     buttonsLayout->addWidget(m_moveDownButton);
-    layout->addLayout(buttonsLayout);
+    layout->addWidget(buttonsWidget);
 
-    connect(m_addButton, &QPushButton::clicked, this, &LayersPanel::onAddLayer);
-    connect(m_addAdjButton, &QPushButton::clicked, this, &LayersPanel::addAdjustmentLayerRequested);
-    connect(m_addImageButton, &QPushButton::clicked, this, &LayersPanel::onAddImageLayer);
-    connect(m_deleteButton, &QPushButton::clicked, this, &LayersPanel::onDeleteLayer);
-    connect(m_moveUpButton, &QPushButton::clicked, this, &LayersPanel::onMoveUp);
-    connect(m_moveDownButton, &QPushButton::clicked, this, &LayersPanel::onMoveDown);
+    connect(m_addButton, &QToolButton::clicked, this, &LayersPanel::onAddLayer);
+    connect(m_addAdjButton, &QToolButton::clicked, this, &LayersPanel::addAdjustmentLayerRequested);
+    connect(m_addImageButton, &QToolButton::clicked, this, &LayersPanel::onAddImageLayer);
+    connect(m_deleteButton, &QToolButton::clicked, this, &LayersPanel::onDeleteLayer);
+    connect(m_moveUpButton, &QToolButton::clicked, this, &LayersPanel::onMoveUp);
+    connect(m_moveDownButton, &QToolButton::clicked, this, &LayersPanel::onMoveDown);
 
 
 

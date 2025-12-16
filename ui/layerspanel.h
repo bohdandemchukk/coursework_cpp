@@ -11,7 +11,7 @@
 #include <QCheckBox>
 #include <vector>
 #include <memory>
-
+#include <QToolButton>
 #include "layers/layer.h"
 
 class LayersPanel : public QWidget
@@ -57,12 +57,12 @@ private:
     QSlider* m_opacitySlider {nullptr};
     QDoubleSpinBox* m_opacitySpin {nullptr};
     QCheckBox* m_clipCheck = nullptr;
-    QPushButton* m_addButton {nullptr};
-    QPushButton* m_addAdjButton {nullptr};
-    QPushButton* m_addImageButton {nullptr};
-    QPushButton* m_deleteButton {nullptr};
-    QPushButton* m_moveUpButton {nullptr};
-    QPushButton* m_moveDownButton {nullptr};
+    QToolButton* m_addButton {nullptr};
+    QToolButton* m_addAdjButton {nullptr};
+    QToolButton* m_addImageButton {nullptr};
+    QToolButton* m_deleteButton {nullptr};
+    QToolButton* m_moveUpButton {nullptr};
+    QToolButton* m_moveDownButton {nullptr};
 
     std::vector<std::shared_ptr<Layer>> m_layers;
     bool m_blockSignals {false};

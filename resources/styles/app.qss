@@ -350,7 +350,9 @@ QToolButton#bwSwitch:checked {
     padding-right: 2px;
 }
 
-#ButtonsLayout QPushButton {
-    padding-left: 24px;
-    padding-right: 24px;
+#ButtonsLayout QToolButton {
+    background-color: #3a3f44;
+    font-size: 14px;
+
 }
+
