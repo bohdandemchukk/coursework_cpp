@@ -1,5 +1,5 @@
 #include "rotatelayercommand.h"
-#include "layer.h"
+#include "layers/layer.h"
 #include <QTransform>
 
 RotateLayerCommand::RotateLayerCommand(LayerManager& mgr, int index, int angle)

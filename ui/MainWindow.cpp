@@ -30,7 +30,7 @@
 #include "changelayerpipelinecommand.h"
 #include "rotatelayercommand.h"
 #include "fliplayercommand.h"
-#include "imageio.h"
+#include "image/imageio.h"
 #include "cropcommand.h"
 #include "layercommands.h"
 #include <QPainter>
@@ -457,6 +457,8 @@ void MainWindow::createLayersDock()
         QDockWidget::DockWidgetMovable |
         QDockWidget::DockWidgetFloatable
         );
+
+
     m_layersPanel = new LayersPanel(this);
     m_layersDock->setWidget(m_layersPanel);
     addDockWidget(Qt::RightDockWidgetArea, m_layersDock);

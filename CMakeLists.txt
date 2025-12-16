@@ -14,7 +14,7 @@ find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets Svg)
 
 set(PROJECT_SOURCES
         main.cpp
-        MainWindow.cpp
+        
 
 
 )
@@ -23,64 +23,61 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     qt_add_executable(ImageEditor
         MANUAL_FINALIZATION
         ${PROJECT_SOURCES}
-        MainWindow.h
-        MyGraphicsView.h
-        MyGraphicsView.cpp
-        CollapsibleSection.cpp
-            CollapsibleSection.h
-            FilterSlider.cpp
-            FilterSlider.h
-    filters/RotateFilter.h filters/RotateFilter.cpp
-    filters/FlipFilter.h filters/FlipFilter.cpp
-    filters/BWFilter.h filters/BWFilter.cpp
-    filters/BrightnessFilter.h filters/BrightnessFilter.cpp
-    filters/saturationfilter.h filters/saturationfilter.cpp
-    filters/contrastfilter.h filters/contrastfilter.cpp
-    filters/gaussianblurutil.h filters/gaussianblurutil.cpp
-    filters/blurfilter.h filters/blurfilter.cpp
-    filters/sharpenfilter.h filters/sharpenfilter.cpp
-    filterpipeline.h filterpipeline.cpp
+        ui/MainWindow.h
+	ui/MainWindow.cpp
+        graphics/MyGraphicsView.h
+        graphics/MyGraphicsView.cpp
+    core/filters/RotateFilter.h core/filters/RotateFilter.cpp
+    core/filters/FlipFilter.h core/filters/FlipFilter.cpp
+    core/filters/BWFilter.h core/filters/BWFilter.cpp
+    core/filters/BrightnessFilter.h core/filters/BrightnessFilter.cpp
+    core/filters/saturationfilter.h core/filters/saturationfilter.cpp
+    core/filters/contrastfilter.h core/filters/contrastfilter.cpp
+    core/filters/gaussianblurutil.h core/filters/gaussianblurutil.cpp
+    core/filters/blurfilter.h core/filters/blurfilter.cpp
+    core/filters/sharpenfilter.h core/filters/sharpenfilter.cpp
+    core/pipeline/filterpipeline.h core/pipeline/filterpipeline.cpp
 
-    filters/imagefilter.h
-    filters/temperaturefilter.h filters/temperaturefilter.cpp
-    filters/exposurefilter.h filters/exposurefilter.cpp
-    filters/gammafilter.h filters/gammafilter.cpp
-    filters/tintfilter.h filters/tintfilter.cpp
-    filters/vibrancefilter.h filters/vibrancefilter.cpp
-    filters/rgbhsvutil.h filters/rgbhsvutil.cpp
-    filters/shadowfilter.h filters/shadowfilter.cpp
-    filters/highlightfilter.h filters/highlightfilter.cpp
-    filters/clarityFilter.h filters/clarityFilter.cpp
-    filters/vignettefilter.h filters/vignettefilter.cpp
-    filters/grainfilter.h filters/grainfilter.cpp
-    filters/splittoningfilter.h filters/splittoningfilter.cpp
-    filters/fadefilter.h filters/fadefilter.cpp
+    core/filters/imagefilter.h
+    core/filters/temperaturefilter.h core/filters/temperaturefilter.cpp
+    core/filters/exposurefilter.h core/filters/exposurefilter.cpp
+    core/filters/gammafilter.h core/filters/gammafilter.cpp
+    core/filters/tintfilter.h core/filters/tintfilter.cpp
+    core/filters/vibrancefilter.h core/filters/vibrancefilter.cpp
+    core/filters/rgbhsvutil.h core/filters/rgbhsvutil.cpp
+    core/filters/shadowfilter.h core/filters/shadowfilter.cpp
+    core/filters/highlightfilter.h core/filters/highlightfilter.cpp
+    core/filters/clarityFilter.h core/filters/clarityFilter.cpp
+    core/filters/vignettefilter.h core/filters/vignettefilter.cpp
+    core/filters/grainfilter.h core/filters/grainfilter.cpp
+    core/filters/splittoningfilter.h core/filters/splittoningfilter.cpp
+    core/filters/fadefilter.h core/filters/fadefilter.cpp
 
-    undoredostack.h undoredostack.cpp
-    command.h
-    changefilterintcommand.h changefilterintcommand.cpp
-    changefilterboolcommand.h changefilterboolcommand.cpp
-    cropcommand.h cropcommand.cpp
-    collapsiblesection.h collapsiblesection.cpp
-    filterslider.h filterslider.cpp
-    brushtool.h brushtool.cpp
-    erasertool.h erasertool.cpp
-    tool.h tool.cpp
-    strokecommand.h strokecommand.cpp
-    layer.h layer.cpp
-    layercommands.h layercommands.cpp
-    layermanager.h layermanager.cpp
-    layerspanel.h layerspanel.cpp
+    commands/undoredostack.h commands/undoredostack.cpp
+    commands/command.h
+    commands/legacy/changefilterintcommand.h commands/legacy/changefilterintcommand.cpp
+    commands/legacy/changefilterboolcommand.h commands/legacy/changefilterboolcommand.cpp
+    commands/cropcommand.h commands/cropcommand.cpp
+    widgets/collapsiblesection.h widgets/collapsiblesection.cpp
+    widgets/filterslider.h widgets/filterslider.cpp
+    tools/brushtool.h tools/brushtool.cpp
+    tools/erasertool.h tools/erasertool.cpp
+    tools/tool.h tools/tool.cpp
+    commands/strokecommand.h commands/strokecommand.cpp
+    core/layers/layer.h core/layers/layer.cpp
+    commands/layercommands.h commands/layercommands.cpp
+    core/layers/layermanager.h core/layers/layermanager.cpp
+    ui/layerspanel.h ui/layerspanel.cpp
 
-    imageio.h imageio.cpp
-    filterspanel.h filterspanel.cpp
-    rotatelayercommand.h rotatelayercommand.cpp
-    fliplayercommand.h fliplayercommand.cpp
-    changelayerpipelinecommand.h changelayerpipelinecommand.cpp
-    filters/fastblur.h filters/fastblur.cpp
-    filters/fastblurfilter.h filters/fastblurfilter.cpp
-    icons.qrc
-    styles.qrc
+    core/image/imageio.h core/image/imageio.cpp
+    ui/filterspanel.h ui/filterspanel.cpp
+    commands/rotatelayercommand.h commands/rotatelayercommand.cpp
+    commands/fliplayercommand.h commands/fliplayercommand.cpp
+    commands/changelayerpipelinecommand.h commands/changelayerpipelinecommand.cpp
+    core/filters/fastblur.h core/filters/fastblur.cpp
+    core/filters/fastblurfilter.h core/filters/fastblurfilter.cpp
+    resources/icons.qrc
+    resources/styles.qrc
 
 
 
@@ -106,7 +103,15 @@ else()
     endif()
 endif()
 
-target_include_directories(ImageEditor PRIVATE filters)
+target_include_directories(ImageEditor PRIVATE
+    core
+    ui
+    widgets
+    graphics
+    commands
+    tools
+)
+
 target_link_libraries(ImageEditor PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::Svg)
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.

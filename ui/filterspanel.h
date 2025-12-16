@@ -5,7 +5,7 @@
 #include <memory>
 #include <QPushButton>
 #include <QToolButton>
-#include "filterpipeline.h"
+#include "pipeline/filterpipeline.h"
 #include <map>
 class QVBoxLayout;
 class FilterSlider;

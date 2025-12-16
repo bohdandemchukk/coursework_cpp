@@ -5,7 +5,7 @@
 #include <QString>
 #include <QPointF>
 #include <QRectF>
-#include "filterpipeline.h"
+#include "pipeline/filterpipeline.h"
 
 enum class BlendMode {
     Normal,

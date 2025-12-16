@@ -1,5 +1,5 @@
 #include "fliplayercommand.h"
-#include "layer.h"
+#include "layers/layer.h"
 
 FlipLayerCommand::FlipLayerCommand(
     LayerManager& mgr, int index, Direction dir

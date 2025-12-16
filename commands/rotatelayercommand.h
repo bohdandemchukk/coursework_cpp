@@ -2,7 +2,7 @@
 #define ROTATELAYERCOMMAND_H
 
 #include "command.h"
-#include "layermanager.h"
+#include "layers/layermanager.h"
 
 class RotateLayerCommand : public Command {
 public:

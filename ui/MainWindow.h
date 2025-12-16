@@ -19,7 +19,7 @@
 #include <QSize>
 #include <QWidgetAction>
 
-#include "layermanager.h"
+#include "layers/layermanager.h"
 #include "MyGraphicsView.h"
 #include "undoredostack.h"
 #include "brushtool.h"
@@ -27,7 +27,6 @@
 
 #include "filterspanel.h"
 #include "layerspanel.h"
-#include "layermanager.h"
 
 class MainWindow : public QMainWindow
 {

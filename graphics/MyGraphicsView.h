@@ -14,7 +14,7 @@
 #include <QVector>
 #include <memory>
 #include "command.h"
-#include "layermanager.h"
+#include "layers/layermanager.h"
 
 
 enum class DragContext {

@@ -2,7 +2,7 @@
 #define FLIPLAYERCOMMAND_H
 
 #include "command.h"
-#include "layermanager.h"
+#include "layers/layermanager.h"
 
 class FlipLayerCommand : public Command {
 public:

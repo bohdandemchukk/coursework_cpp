@@ -1,5 +1,5 @@
 #include "changelayerpipelinecommand.h"
-#include "layer.h"
+#include "layers/layer.h"
 #include <QDebug>
 
 ChangeLayerPipelineCommand::ChangeLayerPipelineCommand(

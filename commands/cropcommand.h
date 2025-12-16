@@ -2,7 +2,7 @@
 #define CROPCOMMAND_H
 
 #include "command.h"
-#include "layermanager.h"
+#include "layers/layermanager.h"
 #include <QImage>
 #include <QRect>
 #include <functional>

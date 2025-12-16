@@ -5,7 +5,7 @@
 
 #include "command.h"
 #include <QPointF>
-#include "layermanager.h"
+#include "layers/layermanager.h"
 
 class AddLayerCommand : public Command
 {

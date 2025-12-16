@@ -1,8 +1,8 @@
 #ifndef CHANGELAYERPIPELINECOMMAND_H
 #define CHANGELAYERPIPELINECOMMAND_H
-#include "layer.h"
+#include "layers/layer.h"
 #include "command.h"
-#include "layermanager.h"
+#include "layers/layermanager.h"
 
 class ChangeLayerPipelineCommand : public Command {
 public:

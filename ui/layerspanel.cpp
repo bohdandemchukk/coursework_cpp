@@ -24,7 +24,8 @@ LayersPanel::LayersPanel(QWidget* parent)
     });
     connect(m_list, &QListWidget::itemChanged, this, &LayersPanel::onItemChanged);
 
-    auto* buttonsLayout = new QHBoxLayout();
+    auto* buttonsLayout = new QVBoxLayout();
+    buttonsLayout->setObjectName("ButtonsLayout");
     m_addButton = new QPushButton(QIcon(":/icons/layerspanel/add.svg"), tr("Brush Layer"), this);
     m_addAdjButton = new QPushButton(QIcon(":/icons/layerspanel/addfilter.svg"), tr("Adjustment Layer"), this);
     m_addImageButton = new QPushButton(QIcon(":/icons/layerspanel/addimg.svg"), tr("Image Layer"), this);

@@ -12,7 +12,7 @@
 #include <vector>
 #include <memory>
 
-#include "layer.h"
+#include "layers/layer.h"
 
 class LayersPanel : public QWidget
 {

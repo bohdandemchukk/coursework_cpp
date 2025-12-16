@@ -5,7 +5,7 @@
 #include <vector>
 #include <memory>
 #include <utility>
-#include "imagefilter.h"
+#include "filters/imagefilter.h"
 #include <algorithm>
 #include <type_traits>
 
