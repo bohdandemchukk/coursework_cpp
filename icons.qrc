@@ -38,6 +38,8 @@
         <file>icons/layerspanel/adjlayer.svg</file>
         <file>icons/filters/chevrondown.svg</file>
         <file>icons/filters/chevronright.svg</file>
+        <file>icons/logo.webp</file>
         <file>icons/filters/bw.svg</file>
+        <file>icons/logo.png</file>
     </qresource>
 </RCC>

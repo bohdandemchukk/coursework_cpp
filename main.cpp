@@ -8,6 +8,10 @@ int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
 
+    a.setWindowIcon(QIcon(":/icons/logo.png"));
+    a.setApplicationName("leafix");
+    a.setOrganizationName("Demchuk Bohdan");
+    a.setApplicationDisplayName("Leafix Editor");
     QFile f(":/styles/app.qss");
 
 
